@@ -194,61 +194,6 @@ class _PresenceScreenState extends State<PresenceScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-                child: _WhiteCard(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Keterangan Warna',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF111827),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: const [
-                            Expanded(
-                              child: _LegendItem(
-                                color: Color(0xFF16A34A),
-                                text: 'Hadir',
-                              ),
-                            ),
-                            Expanded(
-                              child: _LegendItem(
-                                color: Color(0xFFEAB308),
-                                text: 'Sakit',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: const [
-                            Expanded(
-                              child: _LegendItem(
-                                color: Color(0xFF2F80FF),
-                                text: 'Izin',
-                              ),
-                            ),
-                            Expanded(
-                              child: _LegendItem(
-                                color: Color(0xFFEF4444),
-                                text: 'Alfa',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
                 child: _CalendarCard(
                   month: _month,
                   selectedDay: _selectedDay,
@@ -452,38 +397,6 @@ class _SummaryCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String text;
-
-  const _LegendItem({required this.color, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(99),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF374151),
-          ),
-        ),
-      ],
     );
   }
 }

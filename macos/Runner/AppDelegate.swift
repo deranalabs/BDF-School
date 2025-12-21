@@ -10,4 +10,12 @@ class AppDelegate: FlutterAppDelegate {
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
     return true
   }
+  
+  override func applicationDidFinishLaunching(_ notification: Notification) {
+    NSApp.windows.forEach { window in
+      window.acceptsMouseMovedEvents = true
+      window.makeFirstResponder(window.contentViewController)
+    }
+    super.applicationDidFinishLaunching(notification)
+  }
 }

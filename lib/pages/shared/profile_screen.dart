@@ -118,31 +118,6 @@ class ProfileScreen extends StatelessWidget {
                           title: 'Nomor Telepon',
                           value: '+62 813-9876-5432',
                         ),
-                        const SizedBox(height: 18),
-                        Container(height: 1, color: const Color(0xFFF1F5F9)),
-                        const SizedBox(height: 18),
-                        _SectionTitle(title: 'Prestasi'),
-                        const SizedBox(height: 12),
-                        const _AchievementTile(
-                          icon: Icons.emoji_events_outlined,
-                          iconBg: Color(0xFFEAB308),
-                          title: 'Juara 1 Olimpiade Matematika',
-                          subtitle: '2024',
-                        ),
-                        const SizedBox(height: 12),
-                        const _AchievementTile(
-                          icon: Icons.trending_up_rounded,
-                          iconBg: Color(0xFF2F80FF),
-                          title: 'Ranking 5 Kelas',
-                          subtitle: 'Semester Ganjil 2024/2025',
-                        ),
-                        const SizedBox(height: 12),
-                        const _AchievementTile(
-                          icon: Icons.menu_book_outlined,
-                          iconBg: Color(0xFF9333EA),
-                          title: 'Siswa Berprestasi',
-                          subtitle: '2023',
-                        ),
                       ],
                     ),
                   ),
@@ -211,33 +186,6 @@ class _ProfileCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              Row(
-                children: const [
-                  Expanded(
-                    child: _StatMini(
-                      bg: Color(0xFF2F80FF),
-                      value: '87',
-                      label: 'Nilai Rata-rata',
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _StatMini(
-                      bg: Color(0xFF16A34A),
-                      value: '95%',
-                      label: 'Kehadiran',
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _StatMini(
-                      bg: Color(0xFF9333EA),
-                      value: '42/45',
-                      label: 'Tugas Selesai',
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         ),
@@ -275,55 +223,6 @@ class _ProfileCard extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatMini extends StatelessWidget {
-  final Color bg;
-  final String value;
-  final String label;
-
-  const _StatMini({required this.bg, required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          height: 54,
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x12000000),
-                blurRadius: 18,
-                offset: Offset(0, 10),
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF6B7280),
           ),
         ),
       ],

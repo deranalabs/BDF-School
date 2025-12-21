@@ -9,11 +9,7 @@ class GradesScreen extends StatefulWidget {
   State<GradesScreen> createState() => _GradesScreenState();
 }
 
-enum _GradesTab { summary, detail }
-
 class _GradesScreenState extends State<GradesScreen> {
-  _GradesTab _tab = _GradesTab.summary;
-
   final List<_SubjectGrade> _subjects = const [
     _SubjectGrade(
       color: Color(0xFF2F80FF),
@@ -122,223 +118,68 @@ class _GradesScreenState extends State<GradesScreen> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
-              child: _TopTabs(
-                value: _tab,
-                onChanged: (t) => setState(() => _tab = t),
-              ),
-            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
                 child: Column(
                   children: [
-                    if (_tab == _GradesTab.summary) ...[
-                      const SizedBox(height: 10),
-                      Row(
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MetricCard(
+                            bg: const Color(0xFF2F80FF),
+                            icon: Icons.gps_fixed_rounded,
+                            value: '$_avg',
+                            label: 'Rata-rata',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MetricCard(
+                            bg: const Color(0xFF16A34A),
+                            icon: Icons.emoji_events_outlined,
+                            value: '$_max',
+                            label: 'Tertinggi',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MetricCard(
+                            bg: const Color(0xFF9333EA),
+                            icon: Icons.trending_up_rounded,
+                            value: '$_rank',
+                            label: 'Peringkat',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _Card(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: _MetricCard(
-                              bg: const Color(0xFF2F80FF),
-                              icon: Icons.gps_fixed_rounded,
-                              value: '$_avg',
-                              label: 'Rata-rata',
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 16, 16, 10),
+                            child: Text(
+                              'Daftar Nilai',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF111827),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _MetricCard(
-                              bg: const Color(0xFF16A34A),
-                              icon: Icons.emoji_events_outlined,
-                              value: '$_max',
-                              label: 'Tertinggi',
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _MetricCard(
-                              bg: const Color(0xFF9333EA),
-                              icon: Icons.trending_up_rounded,
-                              value: '$_rank',
-                              label: 'Peringkat',
-                            ),
-                          ),
+                          for (final s in _subjects) _DetailGradeCard(item: s),
+                          const SizedBox(height: 6),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      _Card(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                'Perkembangan Rata-rata',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF111827),
-                                ),
-                              ),
-                              SizedBox(height: 14),
-                              SizedBox(height: 180, child: _AvgLineChart()),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _Card(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                'Analisis Nilai',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF111827),
-                                ),
-                              ),
-                              SizedBox(height: 10),
-                              SizedBox(height: 240, child: _RadarChart()),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _Card(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Nilai per Mata Pelajaran',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF111827),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              SizedBox(
-                                height: 220,
-                                child: _BarChart(subjects: _subjects),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _Card(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.fromLTRB(16, 16, 16, 10),
-                              child: Text(
-                                'Daftar Nilai',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF111827),
-                                ),
-                              ),
-                            ),
-                            for (final s in _subjects) _GradeRow(item: s),
-                            const SizedBox(height: 4),
-                          ],
-                        ),
-                      ),
-                    ] else ...[
-                      const SizedBox(height: 10),
-                      for (final s in _subjects) ...[
-                        _DetailGradeCard(item: s),
-                        const SizedBox(height: 12),
-                      ],
-                    ],
+                    ),
                   ],
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TopTabs extends StatelessWidget {
-  final _GradesTab value;
-  final ValueChanged<_GradesTab> onChanged;
-
-  const _TopTabs({required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _TabButton(
-              selected: value == _GradesTab.summary,
-              text: 'Ringkasan',
-              onTap: () => onChanged(_GradesTab.summary),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _TabButton(
-              selected: value == _GradesTab.detail,
-              text: 'Detail',
-              onTap: () => onChanged(_GradesTab.detail),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TabButton extends StatelessWidget {
-  final bool selected;
-  final String text;
-  final VoidCallback onTap;
-
-  const _TabButton({
-    required this.selected,
-    required this.text,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? const Color(0xFF2F80FF) : const Color(0xFFF3F4F6),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: SizedBox(
-          height: 44,
-          child: Center(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: selected ? Colors.white : const Color(0xFF6B7280),
-                fontWeight: FontWeight.w900,
-                fontSize: 14,
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -833,147 +674,134 @@ class _GradeRow extends StatelessWidget {
   }
 }
 
-class _DetailGradeCard extends StatefulWidget {
+class _DetailGradeCard extends StatelessWidget {
   final _SubjectGrade item;
 
   const _DetailGradeCard({required this.item});
 
   @override
-  State<_DetailGradeCard> createState() => _DetailGradeCardState();
-}
-
-class _DetailGradeCardState extends State<_DetailGradeCard> {
-  bool _expanded = false;
-
-  @override
   Widget build(BuildContext context) {
     return _Card(
-      child: InkWell(
-        onTap: () => setState(() => _expanded = !_expanded),
-        child: Column(
-          children: [
-            SizedBox(
-              height: 88,
-              child: Row(
+      child: Column(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 4, color: widget.item.color),
+                  Container(width: 4, height: 88, color: item.color),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.item.subject,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF111827),
-                            ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.subject,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF111827),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.item.teacher,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF6B7280),
-                            ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.teacher,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF6B7280),
                           ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              const Text(
-                                'Nilai Akhir: ',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF374151),
-                                ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 10,
+                          runSpacing: 8,
+                          children: [
+                            const Text(
+                              'Nilai Akhir:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF374151),
                               ),
-                              Text(
-                                '${widget.item.score}',
+                            ),
+                            Text(
+                              '${item.score}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD1FAE5),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                item.grade,
                                 style: const TextStyle(
-                                  fontSize: 14,
+                                  color: Color(0xFF16A34A),
                                   fontWeight: FontWeight.w900,
-                                  color: Color(0xFF111827),
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFD1FAE5),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  widget.item.grade,
-                                  style: const TextStyle(
-                                    color: Color(0xFF16A34A),
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  if (widget.item.trendUp)
+                  if (item.trendUp)
                     const Icon(Icons.trending_up_rounded, color: Color(0xFF16A34A))
                   else
-                    const Text(
-                      '–',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF9CA3AF),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text(
+                        '–',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF9CA3AF),
+                        ),
                       ),
                     ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    color: const Color(0xFF9CA3AF),
-                  ),
                   const SizedBox(width: 14),
                 ],
               ),
+            ],
+          ),
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
             ),
-            if (_expanded)
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Komponen Nilai',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF111827),
+                  ),
                 ),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Komponen Nilai',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    _DetailRow(label: 'Tugas', value: '90'),
-                    SizedBox(height: 8),
-                    _DetailRow(label: 'Ulangan', value: '88'),
-                    SizedBox(height: 8),
-                    _DetailRow(label: 'UAS', value: '86'),
-                  ],
-                ),
-              ),
-          ],
-        ),
+                SizedBox(height: 10),
+                _DetailRow(label: 'Tugas', value: '90'),
+                SizedBox(height: 8),
+                _DetailRow(label: 'Ulangan', value: '88'),
+                SizedBox(height: 8),
+                _DetailRow(label: 'UAS', value: '86'),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

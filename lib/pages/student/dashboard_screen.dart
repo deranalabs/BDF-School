@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'announcements_screen.dart';
 import 'grades_screen.dart';
-import 'notifications_screen.dart';
-import 'profile_screen.dart';
+import '../shared/notifications_screen.dart';
+import '../shared/profile_screen.dart';
 import 'presence_screen.dart';
 import 'schedule_screen.dart';
 import 'tasks_screen.dart';
+import '../../state/auth_controller.dart';
+import '../shared/widgets/dashboard_header.dart';
+import '../shared/widgets/app_sidebar.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -147,10 +151,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFF6F8FC),
       drawer: AppSidebar(
-        selectedIndex: _selectedIndex,
-        onSelected: _onMenuSelected,
+        roleLabel: 'Siswa',
+        roleSubtitle: 'Kelas XII IPA 1',
+        profileInitial: 'S',
+        items: [
+          SidebarMenuItem(
+            icon: Icons.home_outlined,
+            title: 'Dashboard',
+            selected: _selectedIndex == 0,
+            onTap: () => _onMenuSelected(0, 'Dashboard'),
+          ),
+          SidebarMenuItem(
+            icon: Icons.description_outlined,
+            title: 'Tugas',
+            selected: _selectedIndex == 1,
+            onTap: () => _onMenuSelected(1, 'Tugas'),
+          ),
+          SidebarMenuItem(
+            icon: Icons.calendar_today_outlined,
+            title: 'Jadwal',
+            selected: _selectedIndex == 2,
+            onTap: () => _onMenuSelected(2, 'Jadwal'),
+          ),
+          SidebarMenuItem(
+            icon: Icons.fact_check_outlined,
+            title: 'Presensi',
+            selected: _selectedIndex == 3,
+            onTap: () => _onMenuSelected(3, 'Presensi'),
+          ),
+          SidebarMenuItem(
+            icon: Icons.menu_book_outlined,
+            title: 'Nilai',
+            selected: _selectedIndex == 4,
+            onTap: () => _onMenuSelected(4, 'Nilai'),
+          ),
+          SidebarMenuItem(
+            icon: Icons.campaign_outlined,
+            title: 'Pengumuman',
+            selected: _selectedIndex == 5,
+            onTap: () => _onMenuSelected(5, 'Pengumuman'),
+          ),
+        ],
         onLogout: () {
           Navigator.of(context).pop();
+          context.read<AuthController>().logout();
           Navigator.of(context).popUntil((route) => route.isFirst);
         },
       ),
@@ -160,10 +204,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-                child: _Header(
+                child: DashboardHeader(
+                  title: 'Dashboard',
+                  subtitle: 'Halo, Siswa!',
+                  profileInitial: 'S',
                   onOpenMenu: () => _scaffoldKey.currentState?.openDrawer(),
-                  showNotifDot: _unreadNotifications > 0,
                   onOpenNotifications: _openNotifications,
+                  showNotificationDot: _unreadNotifications > 0,
                   onOpenProfile: _openProfile,
                 ),
               ),
@@ -337,101 +384,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
-  final VoidCallback onOpenMenu;
-  final VoidCallback onOpenNotifications;
-  final bool showNotifDot;
-  final VoidCallback onOpenProfile;
-
-  const _Header({
-    required this.onOpenMenu,
-    required this.onOpenNotifications,
-    required this.showNotifDot,
-    required this.onOpenProfile,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onOpenMenu,
-          icon: const Icon(Icons.menu_rounded),
-          color: const Color(0xFF111827),
-          splashRadius: 22,
-        ),
-        const SizedBox(width: 6),
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Dashboard',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
-                  height: 1.05,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Halo, Siswa!',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            IconButton(
-              onPressed: onOpenNotifications,
-              icon: const Icon(Icons.notifications_none_rounded),
-              color: const Color(0xFF111827),
-              splashRadius: 22,
-            ),
-            if (showNotifDot)
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2F80FF),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(width: 6),
-        InkWell(
-          onTap: onOpenProfile,
-          borderRadius: BorderRadius.circular(999),
-          child: const CircleAvatar(
-            radius: 18,
-            backgroundColor: Color(0xFF2F80FF),
-            child: Text(
-              'S',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _AttendanceCard extends StatelessWidget {
   final VoidCallback onTap;
 
@@ -521,7 +473,7 @@ class _AttendanceCard extends StatelessWidget {
                 Icon(Icons.location_on_outlined, color: Colors.white, size: 18),
                 SizedBox(width: 8),
                 Text(
-                  'SMA Negeri 1',
+                  'BDF School',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -936,196 +888,3 @@ class _AnnouncementCard extends StatelessWidget {
   }
 }
 
-class AppSidebar extends StatelessWidget {
-  final int selectedIndex;
-  final void Function(int index, String title) onSelected;
-  final VoidCallback onLogout;
-
-  const AppSidebar({
-    super.key,
-    required this.selectedIndex,
-    required this.onSelected,
-    required this.onLogout,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF2F80FF), Color(0xFF1E5BFF)],
-                ),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 22,
-                    backgroundColor: Colors.white24,
-                    child: Text(
-                      'S',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Siswa',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Kelas XII IPA 1',
-                          style: TextStyle(
-                            color: Color(0xFFEAF2FF),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
-                    splashRadius: 20,
-                  ),
-                ],
-              ),
-            ),
-            Container(height: 1, color: Color(0xFFF1F5F9)),
-            const SizedBox(height: 6),
-            _SidebarItem(
-              selected: selectedIndex == 0,
-              icon: Icons.home_outlined,
-              title: 'Dashboard',
-              onTap: () => onSelected(0, 'Dashboard'),
-            ),
-            _SidebarItem(
-              selected: selectedIndex == 1,
-              icon: Icons.description_outlined,
-              title: 'Tugas',
-              onTap: () => onSelected(1, 'Tugas'),
-            ),
-            _SidebarItem(
-              selected: selectedIndex == 2,
-              icon: Icons.calendar_today_outlined,
-              title: 'Jadwal',
-              onTap: () => onSelected(2, 'Jadwal'),
-            ),
-            _SidebarItem(
-              selected: selectedIndex == 3,
-              icon: Icons.fact_check_outlined,
-              title: 'Presensi',
-              onTap: () => onSelected(3, 'Presensi'),
-            ),
-            _SidebarItem(
-              selected: selectedIndex == 4,
-              icon: Icons.menu_book_outlined,
-              title: 'Nilai',
-              onTap: () => onSelected(4, 'Nilai'),
-            ),
-            _SidebarItem(
-              selected: selectedIndex == 5,
-              icon: Icons.campaign_outlined,
-              title: 'Pengumuman',
-              onTap: () => onSelected(5, 'Pengumuman'),
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: InkWell(
-                onTap: onLogout,
-                child: SizedBox(
-                  height: 52,
-                  child: Row(
-                    children: const [
-                      Icon(Icons.logout_rounded, color: Color(0xFFEF4444)),
-                      SizedBox(width: 14),
-                      Text(
-                        'Keluar',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFFEF4444),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SidebarItem extends StatelessWidget {
-  final bool selected;
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-
-  const _SidebarItem({
-    required this.selected,
-    required this.icon,
-    required this.title,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = selected ? const Color(0xFFEFF6FF) : Colors.transparent;
-    final fg = selected ? const Color(0xFF2F80FF) : const Color(0xFF374151);
-    final iconColor = selected ? const Color(0xFF2F80FF) : const Color(0xFF6B7280);
-
-    return Material(
-      color: bg,
-      child: InkWell(
-        onTap: onTap,
-        child: SizedBox(
-          height: 56,
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                color: selected ? const Color(0xFF2F80FF) : Colors.transparent,
-              ),
-              const SizedBox(width: 14),
-              Icon(icon, color: iconColor),
-              const SizedBox(width: 16),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: fg,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
