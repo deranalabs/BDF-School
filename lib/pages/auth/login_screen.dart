@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/auth_controller.dart';
+import '../../utils/feedback.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -53,157 +55,150 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FB),
+      backgroundColor: const Color(0xFFF3F5F9),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              DecoratedBox(
-                decoration: const BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x3300288C),
-                      blurRadius: 24,
-                      offset: Offset(0, 14),
-                    ),
-                  ],
-                ),
-                child: SizedBox(
-                  height: 210,
-                  child: ClipPath(
-                    clipper: _WaveClipper(),
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF0D59FF),
-                            Color(0xFF0831A5),
-                          ],
-                        ),
-                      ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 12),
+                  const _BrandMark(),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Masuk Admin',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: const Color(0xFF2F80FF),
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 26),
-              const _BrandMark(),
-              const SizedBox(height: 26),
-              Container(
-                padding: const EdgeInsets.fromLTRB(22, 26, 22, 30),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D5BFF),
-                  borderRadius: BorderRadius.circular(44),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x2600288C),
-                      blurRadius: 32,
-                      offset: Offset(0, 18),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Gunakan akun administrator untuk mengelola panel sekolah.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF4A4A4A),
+                      fontSize: 14,
+                      height: 1.4,
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Login',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.4,
-                      ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(22, 24, 22, 26),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 16,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Username',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _usernameController,
-                      textInputAction: TextInputAction.next,
-                      style: const TextStyle(fontSize: 16),
-                      decoration: _inputDecoration(
-                        hintText: 'Masukkan username',
-                        prefixIcon: Icons.person_outline,
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    const Text(
-                      'Password',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      style: const TextStyle(fontSize: 16),
-                      decoration: _inputDecoration(
-                        hintText: 'Masukkan password',
-                        prefixIcon: Icons.lock_outline,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: const Color(0xFF95A2B7),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Masuk',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Username',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _usernameController,
+                          textInputAction: TextInputAction.next,
+                          style: const TextStyle(fontSize: 16),
+                          decoration: _inputDecoration(
+                            hintText: 'Masukkan username',
+                            prefixIcon: Icons.person_outline,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Password',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          style: const TextStyle(fontSize: 16),
+                          decoration: _inputDecoration(
+                            hintText: 'Masukkan password',
+                            prefixIcon: Icons.lock_outline,
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                                color: const Color(0xFF95A2B7),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        _LoginButton(
+                          onLogin: () async {
+                            FocusScope.of(context).unfocus();
+                            final auth = context.read<AuthController>();
+                            try {
+                              await auth.login(
+                                _usernameController.text,
+                                _passwordController.text,
+                              );
+                              showFeedback(context, 'Login berhasil');
+                            } on AuthException catch (e) {
+                              showFeedback(context, e.message);
+                            }
+                          },
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 26),
-                    _LoginButton(
-                      onLogin: () async {
-                        FocusScope.of(context).unfocus();
-                        final auth = context.read<AuthController>();
-                        try {
-                          await auth.login(
-                            _usernameController.text,
-                            _passwordController.text,
-                          );
-                        } on AuthException catch (e) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.message)),
-                          );
-                        }
-                      },
+                  ),
+                  const SizedBox(height: 16),
+                  const _DemoHint(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '© 2025 BDF School',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF8E95A9),
                     ),
-                    const SizedBox(height: 22),
-                    const _DemoHint(),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
               ),
-              const SizedBox(height: 20),
-              const Text(
-                '© 2025 BDF School',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF8E95A9),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
+            ),
           ),
         ),
       ),
@@ -269,40 +264,45 @@ class _DemoHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0942B3),
-        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFFEEF4FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD7E4FF)),
       ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+      child: Wrap(
+        runSpacing: 6,
+        spacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
+        children: const [
           Text(
-            'Demo',
+            'Akun demo administrator:',
             style: TextStyle(
-              color: Colors.white70,
+              color: Color(0xFF1F3B77),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Text(
-                'siswa / siswa123',
+                'admin / admin123',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF2F80FF),
                   fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               SizedBox(height: 4),
               Text(
-                'guru / guru123',
+                'Pastikan huruf kecil semua',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF4A4A4A),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
@@ -311,29 +311,4 @@ class _DemoHint extends StatelessWidget {
       ),
     );
   }
-}
-
-class _WaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path()..lineTo(0, size.height - 90);
-    path.quadraticBezierTo(
-      size.width * 0.25,
-      size.height - 20,
-      size.width * 0.5,
-      size.height - 40,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.75,
-      size.height - 60,
-      size.width,
-      size.height - 15,
-    );
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
