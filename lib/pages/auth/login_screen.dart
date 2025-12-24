@@ -30,24 +30,24 @@ class _LoginScreenState extends State<LoginScreen> {
     required IconData prefixIcon,
     Widget? suffixIcon,
   }) {
-    const radius = BorderRadius.all(Radius.circular(20));
-    const outlineColor = Color(0xFFE4E7EC);
+    const radius = BorderRadius.all(Radius.circular(14));
+    const outlineColor = Color(0xFFD7DDE5);
 
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(color: Color(0xFF9AA5B5), fontSize: 15),
+      hintStyle: const TextStyle(color: Color(0xFF9AA5B5), fontSize: 14),
       prefixIcon: Icon(prefixIcon, color: const Color(0xFF95A2B7)),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       enabledBorder: const OutlineInputBorder(
         borderRadius: radius,
-        borderSide: BorderSide(color: outlineColor, width: 1.2),
+        borderSide: BorderSide(color: outlineColor, width: 1.1),
       ),
       focusedBorder: const OutlineInputBorder(
         borderRadius: radius,
-        borderSide: BorderSide(color: Color(0xFF0D5BFF), width: 1.4),
+        borderSide: BorderSide(color: Color(0xFF0F1F5C), width: 1.4),
       ),
     );
   }
@@ -55,31 +55,31 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F5F9),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
+              constraints: const BoxConstraints(maxWidth: 380),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
                   const _BrandMark(),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Masuk Admin',
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Selamat Datang',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: const Color(0xFF2F80FF),
-                      fontSize: 28,
+                      color: Color(0xFF0F1F5C),
+                      fontSize: 24,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Gunakan akun administrator untuk mengelola panel sekolah.',
+                    'Masuk ke Admin Panel untuk melanjutkan',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFF4A4A4A),
@@ -89,30 +89,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   Container(
-                    padding: const EdgeInsets.fromLTRB(22, 24, 22, 26),
+                    padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.05),
-                          blurRadius: 16,
-                          offset: const Offset(0, 10),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Masuk',
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
                         const Text(
                           'Username',
                           style: TextStyle(
@@ -125,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextField(
                           controller: _usernameController,
                           textInputAction: TextInputAction.next,
-                          style: const TextStyle(fontSize: 16),
+                          style: const TextStyle(fontSize: 15.5),
                           decoration: _inputDecoration(
                             hintText: 'Masukkan username',
                             prefixIcon: Icons.person_outline,
@@ -145,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           textInputAction: TextInputAction.done,
-                          style: const TextStyle(fontSize: 16),
+                          style: const TextStyle(fontSize: 15.5),
                           decoration: _inputDecoration(
                             hintText: 'Masukkan password',
                             prefixIcon: Icons.lock_outline,
@@ -180,12 +171,42 @@ class _LoginScreenState extends State<LoginScreen> {
                             }
                           },
                         ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF6F8FB),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE5E8EF)),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Demo Admin',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F1F5C),
+                                  fontSize: 13.5,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'Username: admin\nPassword: admin123',
+                                style: TextStyle(
+                                  color: Color(0xFF4A5568),
+                                  fontSize: 13,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const _DemoHint(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   const Text(
                     '© 2025 BDF School',
                     textAlign: TextAlign.center,
@@ -211,11 +232,7 @@ class _BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Image.asset('lib/assets/images/Logo_BDF.png', width: 140, height: 140),
-      ],
-    );
+    return Image.asset('lib/assets/images/logo_bulat.png', width: 160, height: 160);
   }
 }
 
@@ -227,20 +244,20 @@ class _LoginButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 56,
+      height: 54,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF040A40),
-          elevation: 0,
+          backgroundColor: const Color(0xFF0E1B4F),
+          elevation: 0.5,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         onPressed: onLogin,
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.login, color: Colors.white),
+            Icon(Icons.login_rounded, color: Colors.white, size: 20),
             SizedBox(width: 10),
             Text(
               'Masuk',

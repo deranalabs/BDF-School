@@ -21,31 +21,44 @@ class DaftarSiswaPage extends StatefulWidget {
 
 class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
   final _searchController = TextEditingController();
+  String _selectedClass = 'Semua Kelas';
 
   final List<_Student> _students = const [
     _Student(
-      name: 'Ahmad Rizki',
-      nis: '2023001',
-      kelas: 'Kelas 12A',
-      email: 'ahmad.rizki@student.com',
+      name: 'Ahmad Fauzi',
+      nis: '202503',
+      kelas: 'Kelas 1',
+      email: 'ahmad.fauzi@student.com',
       phone: '081234567890',
       status: 'Aktif',
+      initial: 'A',
     ),
     _Student(
-      name: 'Dina Putri',
-      nis: '2023002',
-      kelas: 'Kelas 11B',
-      email: 'dina.putri@student.com',
-      phone: '081298765432',
+      name: 'Bayu Mulyana',
+      nis: '202501',
+      kelas: 'Kelas 2',
+      email: 'bayu.mulyana@student.com',
+      phone: '081234565431',
       status: 'Aktif',
+      initial: 'B',
     ),
     _Student(
-      name: 'Budi Santoso',
-      nis: '2023003',
-      kelas: 'Kelas 10C',
-      email: 'budi.santoso@student.com',
-      phone: '081212345678',
-      status: 'Nonaktif',
+      name: 'Dava Pratama',
+      nis: '202502',
+      kelas: 'Kelas 3',
+      email: 'dava.pratama@student.com',
+      phone: '080987654321',
+      status: 'Aktif',
+      initial: 'D',
+    ),
+    _Student(
+      name: 'Fira Riyanti',
+      nis: '202503',
+      kelas: 'Kelas 4',
+      email: 'fira.riyanti@student.com',
+      phone: '089876123450',
+      status: 'Aktif',
+      initial: 'F',
     ),
   ];
 
@@ -68,9 +81,10 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: const Color(0xFF0A1E4A),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,19 +95,18 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                     const Text(
                       'Tambah Siswa Baru',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black87,
+                        color: Colors.white,
                       ),
                     ),
                     IconButton(
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
@@ -101,7 +114,8 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                         label: 'Nama Lengkap',
                         child: TextField(
                           controller: nameController,
-                          decoration: _inputDecoration('Nama lengkap siswa'),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: _inputDecoration('Nama lengkap'),
                         ),
                       ),
                     ),
@@ -111,13 +125,14 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                         label: 'NIS',
                         child: TextField(
                           controller: nisController,
-                          decoration: _inputDecoration('Nomor Induk Siswa'),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: _inputDecoration('NIS'),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
@@ -125,6 +140,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                         label: 'Email',
                         child: TextField(
                           controller: emailController,
+                          style: const TextStyle(color: Colors.white),
                           decoration: _inputDecoration('email@student.com'),
                         ),
                       ),
@@ -135,16 +151,19 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                         label: 'No. Telepon',
                         child: TextField(
                           controller: phoneController,
-                          decoration: _inputDecoration('081234567890'),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: _inputDecoration('08123456789'),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 _LabeledField(
                   label: 'Kelas',
                   child: DropdownButtonFormField<String>(
+                    dropdownColor: const Color(0xFF1A3A6B),
+                    style: const TextStyle(color: Colors.white),
                     decoration: _inputDecoration('Pilih kelas'),
                     items: const [
                       DropdownMenuItem(value: 'Kelas 10', child: Text('Kelas 10')),
@@ -154,20 +173,21 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                     onChanged: (v) => kelas = v,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 _LabeledField(
                   label: 'Alamat',
                   child: TextField(
-                    decoration: _inputDecoration('Alamat lengkap siswa'),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _inputDecoration('Alamat lengkap'),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 20),
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF2F6FF),
+                    color: Colors.white.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,12 +195,12 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                       const Text(
                         'Akun Login Siswa',
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
@@ -188,7 +208,8 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                               label: 'Username',
                               child: TextField(
                                 controller: usernameController,
-                                decoration: _inputDecoration('Username untuk login'),
+                                style: const TextStyle(color: Colors.white),
+                                decoration: _inputDecoration('Username'),
                               ),
                             ),
                           ),
@@ -198,7 +219,8 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                               label: 'Password',
                               child: TextField(
                                 controller: passwordController,
-                                decoration: _inputDecoration('Password awal'),
+                                style: const TextStyle(color: Colors.white),
+                                decoration: _inputDecoration('Password'),
                               ),
                             ),
                           ),
@@ -207,14 +229,14 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  height: 44,
+                  height: 48,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2F80FF),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      backgroundColor: const Color(0xFFE8D5B5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
                       if (nameController.text.isEmpty ||
@@ -224,19 +246,19 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                           kelas == null ||
                           usernameController.text.isEmpty ||
                           passwordController.text.isEmpty) {
-                        showFeedback(context, 'Lengkapi nama, NIS, email, telepon, kelas, username, dan password');
+                        showFeedback(context, 'Lengkapi semua field');
                         return;
                       }
                       Navigator.of(context).pop();
-                      showFeedback(context, 'Siswa berhasil didaftarkan');
+                      showFeedback(context, 'Siswa berhasil ditambahkan');
                     },
-                    icon: const Icon(Icons.person_add_alt_1, color: Colors.white),
+                    icon: const Icon(Icons.person_add, color: Color(0xFF0A1E4A)),
                     label: const Text(
                       'Daftarkan Siswa',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: Color(0xFF0A1E4A),
                       ),
                     ),
                   ),
@@ -252,10 +274,12 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
   @override
   Widget build(BuildContext context) {
     final scaffoldKey = GlobalKey<ScaffoldState>();
+    
     void goTo(Widget page) {
       Navigator.of(context).pop();
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => page));
     }
+    
     void logout() {
       Navigator.of(context).pop();
       Navigator.of(context).pushReplacement(
@@ -263,196 +287,208 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
       );
     }
 
-    const titleStyle = TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.w800,
-      color: Color(0xFF2F80FF),
-    );
-
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFF3F5F9),
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
+        backgroundColor: const Color(0xFF0A1E4A),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.menu),
-          color: Colors.black87,
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text(
           'Daftar Siswa',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Colors.white,
           ),
         ),
       ),
       drawer: Sidebar(
         selectedIndex: 6,
         onTapDashboard: () => goTo(const DashboardScreen()),
-        onTapTugas: () => goTo(TugasPage()),
-        onTapJadwal: () => goTo(JadwalPage()),
-        onTapPresensi: () => goTo(PresensiPage()),
+        onTapTugas: () => goTo(const TugasPage()),
+        onTapJadwal: () => goTo(const JadwalPage()),
+        onTapPresensi: () => goTo(const PresensiPage()),
         onTapNilai: () => goTo(NilaiPage()),
         onTapPengumuman: () => goTo(const PengumumanPage()),
         onTapSiswa: () => Navigator.of(context).pop(),
-        onTapProfile: () => goTo(const ProfilePage()),
         onTapSettings: () => goTo(const PengaturanPage()),
         onLogout: logout,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header section with dark background
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha((0.05 * 255).round()),
-                      blurRadius: 10,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0A1E4A),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Daftar Siswa', style: titleStyle),
-                    const SizedBox(height: 6),
+                    const Text(
+                      'Manajemen Daftar Siswa',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     const Text(
                       'Kelola data siswa dan pendaftaran akun',
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black54,
+                        color: Colors.white70,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 20),
                     SizedBox(
-                      width: 220,
-                      height: 42,
+                      height: 48,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2F80FF),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          backgroundColor: const Color(0xFFE8D5B5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                         ),
                         onPressed: _openAddStudentDialog,
-                        icon: const Icon(Icons.person_add_alt_1, color: Colors.white),
+                        icon: const Icon(Icons.person_add, color: Color(0xFF0A1E4A)),
                         label: const Text(
                           'Tambah Siswa Baru',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: Color(0xFF0A1E4A),
                           ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: const [
+                        Expanded(
+                          child: _StatCard(
+                            value: '4',
+                            label: 'Total',
+                            color: Color(0xFF5B8DEF),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: _StatCard(
+                            value: '4',
+                            label: 'Aktif',
+                            color: Color(0xFF45C27C),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: _StatCard(
+                            value: '3',
+                            label: 'Kelas',
+                            color: Color(0xFFE67E22),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: const [
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.group_outlined,
-                      value: '4',
-                      label: 'Total Siswa',
-                      color: Color(0xFF5B8DEF),
-                      bg: Color(0xFFE8F0FF),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.person_outline,
-                      value: '4',
-                      label: 'Siswa Aktif',
-                      color: Color(0xFF45C27C),
-                      bg: Color(0xFFE8F8EF),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.school_outlined,
-                      value: '7',
-                      label: 'Total Kelas',
-                      color: Color(0xFF9AA5B5),
-                      bg: Color(0xFFF1F3F6),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+              // Content panel on light background
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha((0.05 * 255).round()),
-                      blurRadius: 10,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF5F7FA),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
+                  ),
                 ),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Kelas',
                       style: TextStyle(
-                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      decoration: _inputDecoration('Semua Kelas'),
-                      initialValue: 'all',
-                      items: const [
-                        DropdownMenuItem(value: 'all', child: Text('Semua Kelas')),
-                        DropdownMenuItem(value: '10', child: Text('Kelas 10')),
-                        DropdownMenuItem(value: '11', child: Text('Kelas 11')),
-                        DropdownMenuItem(value: '12', child: Text('Kelas 12')),
-                      ],
-                      onChanged: (_) {},
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black12),
+                      ),
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedClass,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Semua Kelas', child: Text('Semua Kelas')),
+                          DropdownMenuItem(value: 'Kelas 10', child: Text('Kelas 10')),
+                          DropdownMenuItem(value: 'Kelas 11', child: Text('Kelas 11')),
+                          DropdownMenuItem(value: 'Kelas 12', child: Text('Kelas 12')),
+                        ],
+                        onChanged: (v) => setState(() => _selectedClass = v ?? 'Semua Kelas'),
+                      ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     const Text(
                       'Cari Siswa',
                       style: TextStyle(
-                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _searchController,
-                      decoration: _inputDecoration('Nama, NIS, atau email...').copyWith(
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFF9AA5B5)),
+                      decoration: InputDecoration(
+                        hintText: 'Nama Siswa',
+                        prefixIcon: const Icon(Icons.search, color: Colors.black54),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.black12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.black12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF0A1E4A), width: 2),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    ..._students.map((s) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _StudentCard(student: s),
+                    )),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              ..._students.map((s) => Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: _StudentCard(student: s),
-                  )),
             ],
           ),
         ),
@@ -463,93 +499,62 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      hintStyle: const TextStyle(color: Colors.white54),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white24),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white24),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF2F80FF), width: 1.2),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE8D5B5), width: 2),
       ),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: Colors.white.withOpacity(0.1),
     );
   }
 }
 
 class _StatCard extends StatelessWidget {
   const _StatCard({
-    required this.icon,
     required this.value,
     required this.label,
     required this.color,
-    required this.bg,
   });
 
-  final IconData icon;
   final String value;
   final String label;
   final Color color;
-  final Color bg;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.05 * 255).round()),
-            blurRadius: 10,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: color,
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
             ),
-            child: Icon(icon, color: color),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black54,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
           ),
         ],
@@ -565,107 +570,87 @@ class _StudentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = student.status == 'Aktif' ? const Color(0xFF45C27C) : const Color(0xFFD9534F);
-    final statusBg = student.status == 'Aktif' ? const Color(0xFFE8F8EF) : const Color(0xFFFDECEC);
-
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.05 * 255).round()),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFFE9EDFF),
-                child: Text(
-                  student.name.substring(0, 1),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF5B8DEF),
-                  ),
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F0FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                student.initial,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF5B8DEF),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            student.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.edit_outlined, size: 20),
-                          onPressed: () {},
-                        ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.delete_outline, size: 20, color: Color(0xFFD9534F)),
-                          onPressed: () {},
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        _Chip(text: 'NIS: ${student.nis}', color: const Color(0xFF6B7280), bg: const Color(0xFFF1F3F6)),
-                        _Chip(text: student.kelas, color: const Color(0xFF2F80FF), bg: const Color(0xFFE8F0FF)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: statusBg,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                    Expanded(
                       child: Text(
-                        student.status,
-                        style: TextStyle(
-                          fontSize: 12,
+                        student.name,
+                        style: const TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: statusColor,
+                          color: Color(0xFF0A1E4A),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 14,
-                      runSpacing: 8,
-                      children: [
-                        _InfoRow(icon: Icons.email_outlined, text: student.email),
-                        _InfoRow(icon: Icons.phone_outlined, text: student.phone),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      onPressed: () {},
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                      onPressed: () {},
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _Chip(text: 'NIS : ${student.nis}', color: Colors.black54, bg: Colors.grey[200]!),
+                    _Chip(text: student.kelas, color: const Color(0xFF5B8DEF), bg: const Color(0xFFE8F0FF)),
+                    _Chip(text: student.status, color: const Color(0xFF45C27C), bg: const Color(0xFFE8F8EF)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 14,
+                  runSpacing: 6,
+                  children: [
+                    _InfoRow(icon: Icons.email_outlined, text: student.email),
+                    _InfoRow(icon: Icons.phone_outlined, text: student.phone),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -686,13 +671,13 @@ class _Chip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
         style: TextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: color,
         ),
       ),
@@ -711,13 +696,13 @@ class _InfoRow extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF6B7280)),
-        const SizedBox(width: 6),
+        Icon(icon, size: 14, color: Colors.black54),
+        const SizedBox(width: 4),
         Text(
           text,
           style: const TextStyle(
-            fontSize: 13,
-            color: Color(0xFF4A5568),
+            fontSize: 12,
+            color: Colors.black54,
           ),
         ),
       ],
@@ -732,6 +717,7 @@ class _Student {
   final String email;
   final String phone;
   final String status;
+  final String initial;
 
   const _Student({
     required this.name,
@@ -740,6 +726,7 @@ class _Student {
     required this.email,
     required this.phone,
     required this.status,
+    required this.initial,
   });
 }
 
@@ -757,9 +744,9 @@ class _LabeledField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: 8),

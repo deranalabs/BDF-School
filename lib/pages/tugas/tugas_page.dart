@@ -28,26 +28,26 @@ class _TugasPageState extends State<TugasPage> {
       title: 'Tugas Matematika Bab 5',
       description: 'Kerjakan soal nomor 1-20 halaman 45',
       subject: 'Matematika',
-      kelas: 'Kelas 12A',
+      kelas: 'Kelas 1',
       deadline: '22 Desember 2025',
       status: TaskStatus.aktif,
-      attachment: 'soal_matematika_bab5.pdf',
+      attachment: 'soal_matematika.pdf',
     ),
     TaskItem(
       title: 'Essay Bahasa Indonesia',
       description: 'Buat essay tentang pahlawan nasional minimal 500 kata',
       subject: 'Bahasa Indonesia',
-      kelas: 'Kelas 11B',
+      kelas: 'Kelas 2',
       deadline: '25 Desember 2025',
       status: TaskStatus.aktif,
     ),
     TaskItem(
-      title: 'Laporan Praktikum Fisika',
-      description: 'Laporan hasil praktikum tentang hukum Newton',
-      subject: 'Fisika',
-      kelas: 'Kelas 10C',
+      title: 'Tugas Bahasa Inggris Bab 5',
+      description: 'Kerjakan soal nomor 1-10 halaman 23',
+      subject: 'Bahasa Inggris',
+      kelas: 'Kelas 3',
       deadline: '28 Desember 2025',
-      status: TaskStatus.selesai,
+      status: TaskStatus.aktif,
     ),
   ];
 
@@ -70,21 +70,15 @@ class _TugasPageState extends State<TugasPage> {
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     }
-    const titleStyle = TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.w800,
-      color: Color(0xFF2F80FF),
-    );
 
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFF3F5F9),
+      backgroundColor: const Color(0xFF0A1F44),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
+        backgroundColor: const Color(0xFF0A1F44),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.menu),
-          color: Colors.black87,
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text(
@@ -92,7 +86,7 @@ class _TugasPageState extends State<TugasPage> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Colors.white,
           ),
         ),
       ),
@@ -100,104 +94,108 @@ class _TugasPageState extends State<TugasPage> {
         selectedIndex: 4,
         onTapDashboard: () => goTo(const DashboardScreen()),
         onTapTugas: () => Navigator.of(context).pop(),
-        onTapJadwal: () => goTo(JadwalPage()),
-        onTapPresensi: () => goTo(PresensiPage()),
-        onTapNilai: () => goTo(NilaiPage()),
+        onTapJadwal: () => goTo(const JadwalPage()),
+        onTapPresensi: () => goTo(const PresensiPage()),
+        onTapNilai: () => goTo(const NilaiPage()),
         onTapPengumuman: () => goTo(const PengumumanPage()),
         onTapSiswa: () => goTo(const DaftarSiswaPage()),
-        onTapProfile: () => goTo(const ProfilePage()),
         onTapSettings: () => goTo(const PengaturanPage()),
         onLogout: logout,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+      body: Column(
+        children: [
+          // Header Section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            decoration: const BoxDecoration(
+              color: Color(0xFF0A1F44),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Manajemen Tugas',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 6),
+                const Text(
+                  'Kelola dan pantau tugas untuk semua kelas',
+                  style: TextStyle(
+                    color: Color(0xFFBFCFEA),
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Action Buttons
+                Row(
                   children: [
-                    Text('Manajemen Tugas', style: titleStyle),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Kelola dan pantau tugas untuk semua kelas',
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      height: 44,
+                    Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2F80FF),
+                          backgroundColor: const Color(0xFFFDB45B),
+                          foregroundColor: const Color(0xFF0A1F44),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 0,
                         ),
                         onPressed: _showAddTaskDialog,
-                        icon: const Icon(Icons.add, color: Colors.white),
+                        icon: const Icon(Icons.add, size: 24),
                         label: const Text(
                           'Tambah Tugas Baru',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 6),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () {},
+                      child: const Icon(Icons.search, size: 24),
                     ),
                   ],
                 ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Cari tugas berdasarkan judul, mata pelajaran, atau kelas',
-                    prefixIcon: Icon(Icons.search, color: Color(0xFF9AA5B5)),
-                    border: InputBorder.none,
-                  ),
+              ],
+            ),
+          ),
+          // Content Section
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F7FA),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
                 ),
               ),
-              const SizedBox(height: 14),
-              Column(
-                children: _tasks.map((task) => _TaskCard(task: task)).toList(),
+              child: ListView.builder(
+                padding: const EdgeInsets.all(20),
+                itemCount: _tasks.length,
+                itemBuilder: (context, index) {
+                  return _TaskCard(task: _tasks[index]);
+                },
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -215,68 +213,65 @@ class _TugasPageState extends State<TugasPage> {
       builder: (ctx) {
         return Dialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: StatefulBuilder(
             builder: (context, setState) {
               return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Spacer(),
                         const Text(
                           'Tambah Tugas Baru',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.w700,
+                            color: Color(0xFF2D3748),
                           ),
                         ),
-                        const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.close),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    _LabeledField(
+                    const SizedBox(height: 20),
+                    _DialogField(
                       label: 'Judul Tugas',
                       child: TextField(
                         controller: titleController,
                         decoration: _fieldDecoration('Masukkan judul tugas'),
                       ),
                     ),
-                    _LabeledField(
+                    _DialogField(
                       label: 'Mata Pelajaran',
                       child: DropdownButtonFormField<String>(
                         decoration: _fieldDecoration('Pilih mata pelajaran'),
-                        initialValue: subject,
                         items: const [
                           DropdownMenuItem(value: 'Matematika', child: Text('Matematika')),
                           DropdownMenuItem(value: 'Bahasa Indonesia', child: Text('Bahasa Indonesia')),
-                          DropdownMenuItem(value: 'Fisika', child: Text('Fisika')),
+                          DropdownMenuItem(value: 'Bahasa Inggris', child: Text('Bahasa Inggris')),
                         ],
                         onChanged: (v) => setState(() => subject = v),
                       ),
                     ),
-                    _LabeledField(
+                    _DialogField(
                       label: 'Kelas',
                       child: DropdownButtonFormField<String>(
                         decoration: _fieldDecoration('Pilih kelas'),
-                        initialValue: kelas,
                         items: const [
-                          DropdownMenuItem(value: 'Kelas 12A', child: Text('Kelas 12A')),
-                          DropdownMenuItem(value: 'Kelas 11B', child: Text('Kelas 11B')),
-                          DropdownMenuItem(value: 'Kelas 10C', child: Text('Kelas 10C')),
+                          DropdownMenuItem(value: 'Kelas 1', child: Text('Kelas 1')),
+                          DropdownMenuItem(value: 'Kelas 2', child: Text('Kelas 2')),
+                          DropdownMenuItem(value: 'Kelas 3', child: Text('Kelas 3')),
                         ],
                         onChanged: (v) => setState(() => kelas = v),
                       ),
                     ),
-                    _LabeledField(
+                    _DialogField(
                       label: 'Tanggal Deadline',
                       child: InkWell(
                         onTap: () async {
@@ -291,25 +286,25 @@ class _TugasPageState extends State<TugasPage> {
                           }
                         },
                         child: InputDecorator(
-                          decoration: _fieldDecoration('mm/dd/yyyy'),
+                          decoration: _fieldDecoration('Pilih tanggal'),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
                                 deadline == null
-                                    ? 'mm/dd/yyyy'
-                                    : '${deadline!.month}/${deadline!.day}/${deadline!.year}',
+                                    ? 'Pilih tanggal'
+                                    : '${deadline!.day}/${deadline!.month}/${deadline!.year}',
                                 style: TextStyle(
-                                  color: deadline == null ? const Color(0xFF9AA5B5) : Colors.black87,
+                                  color: deadline == null ? const Color(0xFF9AA5B5) : const Color(0xFF2D3748),
                                 ),
                               ),
-                              const Icon(Icons.calendar_month_outlined, color: Color(0xFF9AA5B5)),
+                              const Icon(Icons.calendar_month, color: Color(0xFF9AA5B5)),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    _LabeledField(
+                    _DialogField(
                       label: 'Deskripsi',
                       child: TextField(
                         controller: descController,
@@ -318,62 +313,15 @@ class _TugasPageState extends State<TugasPage> {
                         decoration: _fieldDecoration('Masukkan deskripsi tugas'),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FBFF),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFCCE1FF)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: const [
-                              Icon(Icons.cloud_upload_outlined, color: Color(0xFF2F80FF)),
-                              SizedBox(width: 8),
-                              Text(
-                                'Upload File Soal (Optional)',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Format: PDF, DOC, DOCX, atau gambar (Maks. 10MB)',
-                            style: TextStyle(color: Colors.black54, fontSize: 12),
-                          ),
-                          const SizedBox(height: 10),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFD9DFE7)),
-                            ),
-                            child: const Text(
-                              'Choose File No file chosen',
-                              style: TextStyle(color: Color(0xFF6C737F)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
-                      height: 46,
+                      height: 50,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2F80FF),
+                          backgroundColor: const Color(0xFF2196F3),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         onPressed: () {
@@ -381,11 +329,11 @@ class _TugasPageState extends State<TugasPage> {
                               subject == null ||
                               kelas == null ||
                               deadline == null) {
-                            showFeedback(context, 'Lengkapi judul, mapel, kelas, dan deadline');
+                            showFeedback(context, 'Lengkapi semua field');
                             return;
                           }
                           Navigator.of(context).pop();
-                          showFeedback(context, 'Tugas disimpan');
+                          showFeedback(context, 'Tugas berhasil ditambahkan');
                         },
                         child: const Text(
                           'Simpan Tugas',
@@ -411,19 +359,21 @@ class _TugasPageState extends State<TugasPage> {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: Color(0xFF9AA5B5)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF2F80FF), width: 1.3),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
       ),
+      filled: true,
+      fillColor: Colors.white,
     );
   }
 }
@@ -435,170 +385,160 @@ class _TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = task.status == TaskStatus.aktif
-        ? const Color(0xFF2F80FF)
-        : const Color(0xFF6B7280);
-    final statusLabel = task.status == TaskStatus.aktif ? 'Aktif' : 'Selesai';
-
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFFFE4B5),
+          width: 3,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 10,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      task.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
+                    Expanded(
+                      child: Text(
+                        task.title,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2D3748),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'Aktif',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Row(
+                      children: [
+                        _ActionIcon(icon: Icons.edit, color: const Color(0xFF2196F3)),
+                        const SizedBox(width: 8),
+                        _ActionIcon(icon: Icons.delete, color: const Color(0xFFF44336)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  task.description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF718096),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(Icons.menu_book, size: 18, color: Color(0xFF718096)),
+                    const SizedBox(width: 6),
                     Text(
-                      task.description,
+                      task.subject,
                       style: const TextStyle(
-                        color: Colors.black87,
-                        fontSize: 14,
-                        height: 1.4,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF718096),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.people, size: 18, color: Color(0xFF718096)),
+                    const SizedBox(width: 6),
+                    Text(
+                      task.kelas,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF718096),
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 18, color: Color(0xFF718096)),
+                    const SizedBox(width: 6),
+                    Text(
+                      task.deadline,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF718096),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (task.attachment != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF9E6),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFE4B5)),
               ),
-              const SizedBox(width: 8),
-              Column(
+              child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: const Icon(
+                      Icons.picture_as_pdf,
+                      color: Color(0xFFF44336),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Text(
-                      statusLabel,
-                      style: TextStyle(
-                        color: statusColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
+                      task.attachment!,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2D3748),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: const [
-                      _ActionIcon(icon: Icons.edit_outlined),
-                      SizedBox(width: 8),
-                      _ActionIcon(icon: Icons.delete_outline, color: Color(0xFFD9534F)),
-                    ],
-                  )
-                ],
-              )
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.menu_book_outlined, size: 18, color: Color(0xFF6C737F)),
-              const SizedBox(width: 6),
-              Text(
-                task.subject,
-                style: const TextStyle(color: Color(0xFF6C737F), fontSize: 13),
-              ),
-              const SizedBox(width: 14),
-              const Icon(Icons.group_outlined, size: 18, color: Color(0xFF6C737F)),
-              const SizedBox(width: 6),
-              Text(
-                task.kelas,
-                style: const TextStyle(color: Color(0xFF6C737F), fontSize: 13),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.calendar_today_outlined, size: 18, color: Color(0xFF6C737F)),
-              const SizedBox(width: 6),
-              Text(
-                'Deadline: ${task.deadline}',
-                style: const TextStyle(color: Color(0xFF6C737F), fontSize: 13),
-              ),
-            ],
-          ),
-          if (task.attachment != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F8FF),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE0E7FF)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.picture_as_pdf_outlined, color: Color(0xFF2F80FF)),
-                  const SizedBox(width: 8),
-                  Text(
-                    task.attachment!,
-                    style: const TextStyle(
-                      color: Color(0xFF2F80FF),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
                 ],
               ),
             ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _LabeledField extends StatelessWidget {
-  const _LabeledField({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          child,
         ],
       ),
     );
@@ -606,22 +546,49 @@ class _LabeledField extends StatelessWidget {
 }
 
 class _ActionIcon extends StatelessWidget {
-  const _ActionIcon({required this.icon, this.color});
+  const _ActionIcon({required this.icon, required this.color});
 
   final IconData icon;
-  final Color? color;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 32,
-      height: 32,
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F7FB),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E5F1)),
       ),
-      child: Icon(icon, size: 18, color: color ?? const Color(0xFF2F80FF)),
+      child: Icon(icon, size: 18, color: color),
+    );
+  }
+}
+
+class _DialogField extends StatelessWidget {
+  const _DialogField({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 8),
+          child,
+        ],
+      ),
     );
   }
 }

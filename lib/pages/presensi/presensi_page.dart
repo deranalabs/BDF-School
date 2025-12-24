@@ -24,25 +24,31 @@ class _PresensiPageState extends State<PresensiPage> {
   final _searchController = TextEditingController();
   final _dateController = TextEditingController(text: '12/22/2025');
   String _selectedClass = 'Semua Kelas';
-  bool _hasChanges = false;
+  
   final List<_PresenceRecord> _records = [
     const _PresenceRecord(
-      name: 'Ahmad Rizki',
-      kelas: '12A',
+      name: 'Bayu Mulyana',
+      kelas: 'Kelas 2',
       time: '07:45',
       status: PresenceStatus.hadir,
     ),
     const _PresenceRecord(
-      name: 'Siti Nurhaliza',
-      kelas: '12A',
+      name: 'Daya Pratama',
+      kelas: 'Kelas 3',
       time: '07:50',
-      status: PresenceStatus.hadir,
+      status: PresenceStatus.izin,
     ),
     const _PresenceRecord(
-      name: 'Budi Santoso',
-      kelas: '12A',
-      time: '-',
-      status: PresenceStatus.izin,
+      name: 'Fira Riyanti',
+      kelas: 'Kelas 4',
+      time: '07:55',
+      status: PresenceStatus.sakit,
+    ),
+    const _PresenceRecord(
+      name: 'Ahmad Fauzi',
+      kelas: 'Kelas 1',
+      time: '07:58',
+      status: PresenceStatus.alpa,
     ),
   ];
 
@@ -51,23 +57,9 @@ class _PresensiPageState extends State<PresensiPage> {
       final idx = _records.indexOf(record);
       if (idx != -1) {
         _records[idx] = _records[idx].copyWith(status: status);
-        _hasChanges = true;
       }
     });
-    showFeedback(context, 'Status ${record.name} diubah ke ${_labelStatus(status)}');
-  }
-
-  String _labelStatus(PresenceStatus status) {
-    switch (status) {
-      case PresenceStatus.hadir:
-        return 'Hadir';
-      case PresenceStatus.izin:
-        return 'Izin';
-      case PresenceStatus.sakit:
-        return 'Sakit';
-      case PresenceStatus.alpa:
-        return 'Alpa';
-    }
+    showFeedback(context, 'Status ${record.name} diubah');
   }
 
   Future<void> _pickDate() async {
@@ -80,17 +72,7 @@ class _PresensiPageState extends State<PresensiPage> {
     );
     if (picked != null && mounted) {
       _dateController.text = '${picked.month}/${picked.day}/${picked.year}';
-      showFeedback(context, 'Tanggal: ${_dateController.text}');
     }
-  }
-
-  void _saveRecap() {
-    if (!_hasChanges) {
-      showFeedback(context, 'Tidak ada perubahan untuk disimpan');
-      return;
-    }
-    setState(() => _hasChanges = false);
-    showFeedback(context, 'Rekap presensi disimpan');
   }
 
   @override
@@ -121,21 +103,15 @@ class _PresensiPageState extends State<PresensiPage> {
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     }
-    const titleStyle = TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.w800,
-      color: Color(0xFF2F80FF),
-    );
 
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFF3F5F9),
+      backgroundColor: const Color(0xFF0A1F44),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
+        backgroundColor: const Color(0xFF0A1F44),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.menu),
-          color: Colors.black87,
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text(
@@ -143,7 +119,7 @@ class _PresensiPageState extends State<PresensiPage> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Colors.white,
           ),
         ),
       ),
@@ -156,567 +132,158 @@ class _PresensiPageState extends State<PresensiPage> {
         onTapNilai: () => goTo(const NilaiPage()),
         onTapPengumuman: () => goTo(PengumumanPage()),
         onTapSiswa: () => goTo(DaftarSiswaPage()),
-        onTapProfile: () => goTo(const ProfilePage()),
         onTapSettings: () => goTo(const PengaturanPage()),
         onLogout: logout,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+      body: Column(
+        children: [
+          // Header Section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            decoration: const BoxDecoration(
+              color: Color(0xFF0A1F44),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Manajemen Presensi',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 6),
+                const Text(
+                  'Kelola dan pantau presensi semua siswa',
+                  style: TextStyle(
+                    color: Color(0xFFB0C4DE),
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Stats Cards
+                Row(
                   children: [
-                    Text('Presensi Kehadiran', style: titleStyle),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Kelola dan pantau kehadiran siswa secara real-time',
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontSize: 14,
-                        height: 1.4,
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Hadir',
+                        value: count(PresenceStatus.hadir).toString(),
+                        color: const Color(0xFF4CAF50),
+                        icon: Icons.check_circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Izin',
+                        value: count(PresenceStatus.izin).toString(),
+                        color: const Color(0xFF2196F3),
+                        icon: Icons.description,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _StatCard(
-                    title: 'Hadir',
-                    value: count(PresenceStatus.hadir).toString(),
-                    color: const Color(0xFF1ABC9C),
-                    background: const Color(0xFFE8FFF5),
-                    icon: Icons.check_circle_outline,
-                  ),
-                  _StatCard(
-                    title: 'Izin',
-                    value: count(PresenceStatus.izin).toString(),
-                    color: const Color(0xFF1C7ED6),
-                    background: const Color(0xFFE9F3FF),
-                    icon: Icons.article_outlined,
-                  ),
-                  _StatCard(
-                    title: 'Sakit',
-                    value: count(PresenceStatus.sakit).toString(),
-                    color: const Color(0xFFF39C12),
-                    background: const Color(0xFFFFF5E6),
-                    icon: Icons.access_time,
-                  ),
-                  _StatCard(
-                    title: 'Alpa',
-                    value: count(PresenceStatus.alpa).toString(),
-                    color: const Color(0xFFE74C3C),
-                    background: const Color(0xFFFFEDEE),
-                    icon: Icons.close,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 8),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Sakit',
+                        value: count(PresenceStatus.sakit).toString(),
+                        color: const Color(0xFFFF9800),
+                        icon: Icons.medical_services,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Alpha',
+                        value: count(PresenceStatus.alpa).toString(),
+                        color: const Color(0xFFF44336),
+                        icon: Icons.cancel,
+                      ),
                     ),
                   ],
                 ),
+              ],
+            ),
+          ),
+          // Content Section
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F7FA),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _LabeledField(
-                      label: 'Kelas',
-                      child: DropdownButtonFormField<String>(
-                        decoration: _fieldDecoration('Semua Kelas'),
-                        items: const [
-                          DropdownMenuItem(value: 'Semua Kelas', child: Text('Semua Kelas')),
-                          DropdownMenuItem(value: 'Kelas 12A', child: Text('Kelas 12A')),
-                          DropdownMenuItem(value: 'Kelas 11B', child: Text('Kelas 11B')),
-                        ],
-                        onChanged: (v) {
-                          setState(() => _selectedClass = v ?? 'Semua Kelas');
-                          showFeedback(context, 'Filter kelas: ${v ?? 'Semua Kelas'}');
-                        },
-                        initialValue: _selectedClass,
-                      ),
+                    // Filter Section
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _FilterDropdown(
+                            value: _selectedClass,
+                            items: const ['Semua Kelas', 'Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4'],
+                            onChanged: (v) => setState(() => _selectedClass = v ?? 'Semua Kelas'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _DateField(
+                            controller: _dateController,
+                            onTap: _pickDate,
+                          ),
+                        ),
+                      ],
                     ),
-                    _LabeledField(
-                      label: 'Tanggal',
-                      child: TextField(
-                        controller: _dateController,
-                        readOnly: true,
-                        onTap: _pickDate,
-                        decoration: _fieldDecoration('12/22/2025').copyWith(
-                          prefixIcon: const Icon(Icons.calendar_month_outlined, color: Color(0xFF9AA5B5)),
+                    const SizedBox(height: 12),
+                    // Search Field
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Nama Siswa',
+                        hintStyle: const TextStyle(color: Color(0xFF9AA5B5)),
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFF9AA5B5)),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
                         ),
                       ),
                     ),
-                    _LabeledField(
-                      label: 'Cari Siswa',
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (_) => setState(() {}),
-                        decoration: const InputDecoration(
-                          hintText: 'Nama siswa...',
-                          prefixIcon: Icon(Icons.search, color: Color(0xFF9AA5B5)),
-                          filled: true,
-                          fillColor: Color(0xFFF8F9FB),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
-                      child: Row(
-                        children: [
-                          const Text(
-                            'Data Kehadiran',
-                            style: TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          const Spacer(),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2F80FF),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            onPressed: _saveRecap,
-                            icon: const Icon(Icons.save_outlined, size: 18, color: Colors.white),
-                            label: const Text(
-                              'Simpan Rekap',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-                      child: Row(
-                        children: const [
-                          Expanded(
-                            flex: 3,
-                            child: Text('Nama Siswa', style: TextStyle(fontWeight: FontWeight.w700)),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: Text('Kelas', style: TextStyle(fontWeight: FontWeight.w700)),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text('Waktu', style: TextStyle(fontWeight: FontWeight.w700)),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text('Status', style: TextStyle(fontWeight: FontWeight.w700)),
-                          ),
-                          SizedBox(width: 44),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1, color: Color(0xFFE6E6E6)),
+                    const SizedBox(height: 20),
+                    // Records List
                     ...visibleRecords.map(
-                      (r) => _PresenceRow(
+                      (r) => _PresenceCard(
                         record: r,
-                        onAddNote: _showNoteDialog,
                         onChangeStatus: (status) => _changeStatus(r, status),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showNoteDialog(_PresenceRecord record) async {
-    final noteController = TextEditingController();
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Spacer(),
-                    const Text(
-                      'Tambah Keterangan',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Nama Siswa',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  readOnly: true,
-                  decoration: _fieldDecoration(record.name),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Status',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE3FAE9),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Hadir',
-                    style: TextStyle(color: Color(0xFF1ABC9C), fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Keterangan',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: noteController,
-                  minLines: 3,
-                  maxLines: 4,
-                  decoration: _fieldDecoration(
-                    'Masukkan keterangan (contoh: Sakit demam, Izin keperluan keluarga, dll.)',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2F80FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {
-                          if (noteController.text.isEmpty) {
-                            showFeedback(context, 'Tambahkan keterangan terlebih dahulu');
-                            return;
-                          }
-                          Navigator.of(context).pop();
-                          showFeedback(context, 'Catatan disimpan');
-                        },
-                        child: const Text(
-                          'Simpan',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          side: const BorderSide(color: Color(0xFFE0E5F1)),
-                        ),
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text(
-                          'Batal',
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  InputDecoration _fieldDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFF9AA5B5)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF2F80FF), width: 1.3),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-    );
-  }
-}
-
-class _PresenceRow extends StatelessWidget {
-  const _PresenceRow({
-    required this.record,
-    required this.onAddNote,
-    required this.onChangeStatus,
-  });
-
-  final _PresenceRecord record;
-  final void Function(_PresenceRecord) onAddNote;
-  final void Function(PresenceStatus) onChangeStatus;
-
-  @override
-  Widget build(BuildContext context) {
-    final statusChip = _statusChip(record.status);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                _statusDot(record.status),
-                const SizedBox(width: 10),
-                Text(
-                  record.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: _kelasChip(record.kelas),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              record.time,
-              style: const TextStyle(color: Color(0xFF4A5568)),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: statusChip,
-          ),
-          SizedBox(
-            width: 44,
-            child: IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () => onAddNote(record),
-            ),
-          ),
-          PopupMenuButton<PresenceStatus>(
-            icon: const Icon(Icons.swap_horiz),
-            onSelected: onChangeStatus,
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: PresenceStatus.hadir, child: Text('Tandai Hadir')),
-              PopupMenuItem(value: PresenceStatus.izin, child: Text('Tandai Izin')),
-              PopupMenuItem(value: PresenceStatus.sakit, child: Text('Tandai Sakit')),
-              PopupMenuItem(value: PresenceStatus.alpa, child: Text('Tandai Alpa')),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _kelasChip(String kelas) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD9DFE7)),
-      ),
-      child: Text(
-        kelas,
-        style: const TextStyle(
-          color: Color(0xFF2F80FF),
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-
-  Widget _statusChip(PresenceStatus status) {
-    Color color;
-    String label;
-    switch (status) {
-      case PresenceStatus.hadir:
-        color = const Color(0xFF1ABC9C);
-        label = 'Hadir';
-        break;
-      case PresenceStatus.izin:
-        color = const Color(0xFF1C7ED6);
-        label = 'Izin';
-        break;
-      case PresenceStatus.sakit:
-        color = const Color(0xFFF39C12);
-        label = 'Sakit';
-        break;
-      case PresenceStatus.alpa:
-        color = const Color(0xFFE74C3C);
-        label = 'Alpa';
-        break;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD9DFE7)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _statusDot(status, size: 7),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statusDot(PresenceStatus status, {double size = 6}) {
-    Color color;
-    switch (status) {
-      case PresenceStatus.hadir:
-        color = const Color(0xFF1ABC9C);
-        break;
-      case PresenceStatus.izin:
-        color = const Color(0xFF1C7ED6);
-        break;
-      case PresenceStatus.sakit:
-        color = const Color(0xFFF39C12);
-        break;
-      case PresenceStatus.alpa:
-        color = const Color(0xFFE74C3C);
-        break;
-    }
-    return CircleAvatar(radius: size / 2, backgroundColor: color);
-  }
-}
-
-class _LabeledField extends StatelessWidget {
-  const _LabeledField({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          child,
         ],
       ),
     );
@@ -728,57 +295,412 @@ class _StatCard extends StatelessWidget {
     required this.title,
     required this.value,
     required this.color,
-    required this.background,
     required this.icon,
   });
 
   final String title;
   final String value;
   final Color color;
-  final Color background;
   final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 165,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(16),
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.white.withOpacity(0.3),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 value,
-                style: TextStyle(
-                  fontSize: 22,
+                style: const TextStyle(
+                  fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: color,
+                  color: Colors.white,
                 ),
               ),
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: Colors.white,
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterDropdown extends StatelessWidget {
+  const _FilterDropdown({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9AA5B5)),
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(
+                item,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  const _DateField({
+    required this.controller,
+    required this.onTap,
+  });
+
+  final TextEditingController controller;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_month, color: Color(0xFF9AA5B5), size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                controller.text,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PresenceCard extends StatelessWidget {
+  const _PresenceCard({
+    required this.record,
+    required this.onChangeStatus,
+  });
+
+  final _PresenceRecord record;
+  final void Function(PresenceStatus) onChangeStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  record.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2D3748),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F4FD),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        record.kelas,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2196F3),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      record.time,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF718096),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          _StatusBadge(status: record.status),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: () => _showStatusMenu(context, onChangeStatus),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7FAFC),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.edit, size: 20, color: Color(0xFF4A5568)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showStatusMenu(BuildContext context, void Function(PresenceStatus) onChangeStatus) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Ubah Status',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _StatusMenuItem(
+                label: 'Hadir',
+                color: const Color(0xFF4CAF50),
+                icon: Icons.check_circle,
+                onTap: () {
+                  Navigator.pop(context);
+                  onChangeStatus(PresenceStatus.hadir);
+                },
+              ),
+              _StatusMenuItem(
+                label: 'Izin',
+                color: const Color(0xFF2196F3),
+                icon: Icons.description,
+                onTap: () {
+                  Navigator.pop(context);
+                  onChangeStatus(PresenceStatus.izin);
+                },
+              ),
+              _StatusMenuItem(
+                label: 'Sakit',
+                color: const Color(0xFFFF9800),
+                icon: Icons.medical_services,
+                onTap: () {
+                  Navigator.pop(context);
+                  onChangeStatus(PresenceStatus.sakit);
+                },
+              ),
+              _StatusMenuItem(
+                label: 'Alpha',
+                color: const Color(0xFFF44336),
+                icon: Icons.cancel,
+                onTap: () {
+                  Navigator.pop(context);
+                  onChangeStatus(PresenceStatus.alpa);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StatusMenuItem extends StatelessWidget {
+  const _StatusMenuItem({
+    required this.label,
+    required this.color,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.status});
+
+  final PresenceStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    String label;
+    IconData icon;
+    
+    switch (status) {
+      case PresenceStatus.hadir:
+        color = const Color(0xFF4CAF50);
+        label = 'Hadir';
+        icon = Icons.check_circle;
+        break;
+      case PresenceStatus.izin:
+        color = const Color(0xFF2196F3);
+        label = 'Izin';
+        icon = Icons.description;
+        break;
+      case PresenceStatus.sakit:
+        color = const Color(0xFFFF9800);
+        label = 'Sakit';
+        icon = Icons.medical_services;
+        break;
+      case PresenceStatus.alpa:
+        color = const Color(0xFFF44336);
+        label = 'Alpha';
+        icon = Icons.cancel;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -793,6 +715,7 @@ class _PresenceRecord {
   final String kelas;
   final String time;
   final PresenceStatus status;
+  
   const _PresenceRecord({
     required this.name,
     required this.kelas,
