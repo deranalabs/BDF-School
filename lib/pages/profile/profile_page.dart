@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import '../dashboard/dashboard_page.dart';
 import '../dashboard/sidebar.dart';
@@ -40,10 +39,12 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final scaffoldKey = GlobalKey<ScaffoldState>();
+    
     void goTo(Widget page) {
       Navigator.of(context).pop();
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => page));
     }
+    
     void logout() {
       Navigator.of(context).pop();
       Navigator.of(context).pushReplacement(
@@ -51,29 +52,22 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
 
-    const titleStyle = TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.w800,
-      color: Color(0xFF2F80FF),
-    );
-
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFF3F5F9),
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
+        backgroundColor: const Color(0xFF0A1E4A),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.menu),
-          color: Colors.black87,
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text(
           'Profil',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Colors.white,
           ),
         ),
       ),
@@ -86,35 +80,70 @@ class _ProfilePageState extends State<ProfilePage> {
         onTapNilai: () => goTo(NilaiPage()),
         onTapPengumuman: () => goTo(const PengumumanPage()),
         onTapSiswa: () => goTo(const DaftarSiswaPage()),
-        onTapProfile: () => Navigator.of(context).pop(),
         onTapSettings: () => goTo(const PengaturanPage()),
         onLogout: logout,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Profil Saya', style: titleStyle),
-              const SizedBox(height: 4),
-              const Text(
-                'Informasi dan detail akun administrator',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.black54,
+              // Header gelap konsisten
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0A1E4A),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Profil Saya',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Informasi dan detail akun administrator',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              _HeaderCard(),
-              const SizedBox(height: 16),
-              _PersonalInfoForm(
-                firstName: _firstName,
-                lastName: _lastName,
-                email: _email,
-                phone: _phone,
-                address: _address,
+              // Panel konten terang
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF5F7FA),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
+                  ),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    _HeaderCard(),
+                    const SizedBox(height: 20),
+                    _PersonalInfoForm(
+                      firstName: _firstName,
+                      lastName: _lastName,
+                      email: _email,
+                      phone: _phone,
+                      address: _address,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -128,20 +157,15 @@ class _HeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2F80FF), Color(0xFF4BA4FF)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 10),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -155,14 +179,21 @@ class _HeaderCard extends StatelessWidget {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.15),
-                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 3),
+                  color: const Color(0xFF0A1E4A),
+                  border: Border.all(color: Colors.white, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: const Center(
                   child: Text(
                     'AS',
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: 28,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                     ),
@@ -170,22 +201,22 @@ class _HeaderCard extends StatelessWidget {
                 ),
               ),
               Container(
+                padding: const EdgeInsets.all(8),
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: Color(0xFF0A1E4A),
                   shape: BoxShape.circle,
                 ),
-                padding: const EdgeInsets.all(6),
-                child: const Icon(Icons.camera_alt_outlined, size: 18, color: Color(0xFF2F80FF)),
+                child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Text(
             'Admin Sekolah',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: Color(0xFF0A1E4A),
             ),
           ),
           const SizedBox(height: 4),
@@ -193,41 +224,34 @@ class _HeaderCard extends StatelessWidget {
             'Administrator',
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.white70,
+              color: Colors.black54,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFE8D5B5),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Text(
               'ID: ADM-2025-001',
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF0A1E4A),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          const Divider(color: Colors.white24, thickness: 1),
-          const SizedBox(height: 10),
+          const Divider(),
+          const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: const [
-              _HeaderInfo(icon: Icons.calendar_today_outlined, label: 'Bergabung', value: 'Jan 2025'),
-              _HeaderInfo(
-                icon: Icons.shield_outlined,
-                label: 'Status',
-                value: 'Aktif',
-                chipColor: Color(0xFF45C27C),
-                isChip: true,
-              ),
-              _HeaderInfo(icon: Icons.lock_outline, label: 'Role', value: 'Super Admin'),
+              _InfoItem(icon: Icons.calendar_today, label: 'Bergabung', value: 'Jan 2025'),
+              _InfoItem(icon: Icons.verified_user, label: 'Status', value: 'Aktif', isActive: true),
+              _InfoItem(icon: Icons.shield, label: 'Role', value: 'Super Admin'),
             ],
           ),
         ],
@@ -236,61 +260,57 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
-class _HeaderInfo extends StatelessWidget {
-  const _HeaderInfo({
+class _InfoItem extends StatelessWidget {
+  const _InfoItem({
     required this.icon,
     required this.label,
     required this.value,
-    this.isChip = false,
-    this.chipColor = Colors.white,
+    this.isActive = false,
   });
 
   final IconData icon;
   final String label;
   final String value;
-  final bool isChip;
-  final Color chipColor;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Icon(icon, color: Colors.white, size: 18),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-            const SizedBox(height: 2),
-            isChip
-                ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: chipColor,
-                      ),
-                    ),
-                  )
-                : Text(
-                    value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-          ],
+        Icon(icon, color: const Color(0xFF0A1E4A), size: 20),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Colors.black54,
+          ),
         ),
+        const SizedBox(height: 2),
+        isActive
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF45C27C),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0A1E4A),
+                ),
+              ),
       ],
     );
   }
@@ -314,16 +334,15 @@ class _PersonalInfoForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -338,27 +357,27 @@ class _PersonalInfoForm extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: Colors.black87,
+                  color: Color(0xFF0A1E4A),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F0FF),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
                   'Terverifikasi',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF2F80FF),
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF5B8DEF),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
@@ -366,7 +385,7 @@ class _PersonalInfoForm extends StatelessWidget {
                   label: 'Nama Depan',
                   child: TextField(
                     controller: firstName,
-                    decoration: _inputDecoration('Nama depan'),
+                    decoration: _inputDecoration('Admin'),
                   ),
                 ),
               ),
@@ -376,21 +395,21 @@ class _PersonalInfoForm extends StatelessWidget {
                   label: 'Nama Belakang',
                   child: TextField(
                     controller: lastName,
-                    decoration: _inputDecoration('Nama belakang'),
+                    decoration: _inputDecoration('Sekolah'),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _LabeledField(
             label: 'Alamat Email',
             child: TextField(
               controller: email,
-              decoration: _inputDecoration('email@sekolah.com'),
+              decoration: _inputDecoration('admin@sekolah.com'),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _LabeledField(
             label: 'Nomor Telepon',
             child: TextField(
@@ -398,7 +417,7 @@ class _PersonalInfoForm extends StatelessWidget {
               decoration: _inputDecoration('081234567890'),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _LabeledField(
             label: 'Alamat Lengkap',
             child: TextField(
@@ -406,16 +425,16 @@ class _PersonalInfoForm extends StatelessWidget {
               decoration: _inputDecoration('Alamat lengkap'),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 44,
+                  height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2F80FF),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      backgroundColor: const Color(0xFF0A1E4A),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
                       if (firstName.text.isEmpty ||
@@ -423,15 +442,15 @@ class _PersonalInfoForm extends StatelessWidget {
                           email.text.isEmpty ||
                           phone.text.isEmpty ||
                           address.text.isEmpty) {
-                        showFeedback(context, 'Lengkapi nama, email, telepon, dan alamat');
+                        showFeedback(context, 'Lengkapi semua field');
                         return;
                       }
-                      showFeedback(context, 'Profil disimpan');
+                      showFeedback(context, 'Profil berhasil disimpan');
                     },
                     child: const Text(
                       'Simpan Perubahan',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -441,19 +460,20 @@ class _PersonalInfoForm extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               SizedBox(
-                height: 44,
+                height: 48,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF9AA5B5)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                   ),
                   onPressed: () {},
                   child: const Text(
                     'Batal',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF4A5568),
+                      color: Colors.red,
                     ),
                   ),
                 ),
@@ -468,21 +488,21 @@ class _PersonalInfoForm extends StatelessWidget {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.black12),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.black12),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF2F80FF), width: 1.2),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF0A1E4A), width: 2),
       ),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: Colors.grey[50],
     );
   }
 }
@@ -502,7 +522,7 @@ class _LabeledField extends StatelessWidget {
           label,
           style: const TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),
         ),
@@ -512,4 +532,3 @@ class _LabeledField extends StatelessWidget {
     );
   }
 }
-

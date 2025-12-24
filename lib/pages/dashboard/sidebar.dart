@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+
 class Sidebar extends StatelessWidget {
   const Sidebar({
     super.key,
@@ -12,7 +13,6 @@ class Sidebar extends StatelessWidget {
     this.onTapNilai,
     this.onTapPengumuman,
     this.onTapSiswa,
-    this.onTapProfile,
     this.onTapSettings,
     this.selectedIndex = 0,
   });
@@ -25,179 +25,165 @@ class Sidebar extends StatelessWidget {
   final VoidCallback? onTapNilai;
   final VoidCallback? onTapPengumuman;
   final VoidCallback? onTapSiswa;
-  final VoidCallback? onTapProfile;
   final VoidCallback? onTapSettings;
   final int selectedIndex;
 
   @override
   Widget build(BuildContext context) {
-    const textStyle = TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.w500,
-      color: Colors.black87,
-    );
-
     return Drawer(
+      backgroundColor: Colors.white,
       child: Column(
         children: [
+          // Header Section
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 44, 16, 18),
+            padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
             decoration: const BoxDecoration(
-              color: Color(0xFF2F80FF),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(6),
-                bottomRight: Radius.circular(6),
-              ),
+              color: Color(0xFF0A1F44),
             ),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 22,
-                  backgroundColor: Colors.white.withOpacity(0.15),
-                  child: Text(
+                  radius: 28,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  child: const Text(
                     'A',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Admin Panel',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Admin Panel',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Halo, Admin!',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white70,
+                      SizedBox(height: 4),
+                      Text(
+                        'Halo, Admin',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white70,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
+          
+          // Menu Items
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                const SizedBox(height: 4),
                 _SidebarItem(
                   icon: Icons.home_outlined,
                   label: 'Dashboard',
                   selected: selectedIndex == 0,
-                  textStyle: textStyle,
                   onTap: onTapDashboard,
                 ),
                 _SidebarItem(
                   icon: Icons.calendar_today_outlined,
                   label: 'Jadwal',
                   selected: selectedIndex == 1,
-                  textStyle: textStyle,
                   onTap: onTapJadwal,
                 ),
                 _SidebarItem(
-                  icon: Icons.fact_check_outlined,
+                  icon: Icons.person_pin_outlined,
                   label: 'Presensi',
                   selected: selectedIndex == 2,
-                  textStyle: textStyle,
                   onTap: onTapPresensi,
                 ),
                 _SidebarItem(
-                  icon: Icons.school_outlined,
+                  icon: Icons.assessment_outlined,
                   label: 'Nilai',
                   selected: selectedIndex == 3,
-                  textStyle: textStyle,
                   onTap: onTapNilai,
                 ),
                 _SidebarItem(
-                  icon: Icons.assignment_outlined,
+                  icon: Icons.menu_book_outlined,
                   label: 'Tugas',
                   selected: selectedIndex == 4,
-                  textStyle: textStyle,
                   onTap: onTapTugas,
                 ),
                 _SidebarItem(
                   icon: Icons.notifications_none_outlined,
                   label: 'Pengumuman',
                   selected: selectedIndex == 5,
-                  textStyle: textStyle,
                   onTap: onTapPengumuman,
                 ),
                 _SidebarItem(
-                  icon: Icons.group_outlined,
+                  icon: Icons.groups_outlined,
                   label: 'Daftar Siswa',
                   selected: selectedIndex == 6,
-                  textStyle: textStyle,
                   onTap: onTapSiswa,
-                ),
-                _SidebarItem(
-                  icon: Icons.person_outline,
-                  label: 'Profile',
-                  selected: selectedIndex == 7,
-                  textStyle: textStyle,
-                  onTap: onTapProfile,
                 ),
                 _SidebarItem(
                   icon: Icons.settings_outlined,
                   label: 'Pengaturan',
                   selected: selectedIndex == 8,
-                  textStyle: textStyle,
                   onTap: onTapSettings,
                 ),
               ],
             ),
           ),
+          
+          // Logout Button
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
-            ),
-            child: InkWell(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Berhasil keluar')),
-                );
-                onLogout?.call();
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, color: Color(0xFFD32F2F)),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Keluar',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFD32F2F),
+            width: double.infinity,
+            margin: const EdgeInsets.all(16),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Berhasil keluar')),
+                  );
+                  onLogout?.call();
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.red.shade100),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.logout,
+                        color: Colors.red.shade600,
+                        size: 22,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 14),
+                      Text(
+                        'Keluar',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+          const SizedBox(height: 10),
         ],
       ),
     );
@@ -209,37 +195,47 @@ class _SidebarItem extends StatelessWidget {
     required this.icon,
     required this.label,
     this.selected = false,
-    required this.textStyle,
     this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool selected;
-  final TextStyle textStyle;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? const Color(0xFF2F80FF) : Colors.black87;
-    return Material(
-      color: selected ? const Color(0xFFF0F5FF) : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: Row(
-            children: [
-              Icon(icon, color: color),
-              const SizedBox(width: 14),
-              Text(
-                label,
-                style: textStyle.copyWith(
-                  color: color,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(
+        color: selected ? const Color(0xFFFFF4E6) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: selected ? const Color(0xFF0A1F44) : Colors.black87,
+                  size: 24,
                 ),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? const Color(0xFF0A1F44) : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
