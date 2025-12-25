@@ -62,4 +62,32 @@ router.post('/login', [
   }
 });
 
+// JWT verification endpoint
+router.get('/verify', (req, res) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'No token provided' 
+    });
+  }
+
+  try {
+    const { verifyToken } = require('../utils/jwt');
+    const decoded = verifyToken(token);
+    
+    res.json({
+      success: true,
+      message: 'Token is valid',
+      decoded
+    });
+  } catch (error) {
+    res.status(401).json({ 
+      success: false, 
+      message: 'Invalid token' 
+    });
+  }
+});
+
 module.exports = router;
