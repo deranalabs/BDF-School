@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 import '../../state/auth_controller.dart';
 import '../../utils/feedback.dart';
@@ -170,6 +172,36 @@ class _LoginScreenState extends State<LoginScreen> {
                               showFeedback(context, e.message);
                             }
                           },
+                        ),
+                        const SizedBox(height: 12),
+                        // Debug connection test button
+                        SizedBox(
+                          height: 40,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () async {
+                              try {
+                                final response = await http.post(
+                                  Uri.parse('http://192.168.110.83:3000/api/auth/login'),
+                                  body: jsonEncode({'username': 'admin', 'password': 'admin123'}),
+                                  headers: {'Content-Type': 'application/json'},
+                                );
+                                showFeedback(context, 'Test: ${response.statusCode} - ${response.body}');
+                              } catch (e) {
+                                showFeedback(context, 'Test Error: $e');
+                              }
+                            },
+                            child: const Text(
+                              'Test Connection',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Container(

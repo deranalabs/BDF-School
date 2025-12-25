@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../jadwal/jadwal_page.dart';
 import '../nilai/nilai_page.dart';
 import '../pengumuman/pengumuman_page.dart';
@@ -10,6 +11,7 @@ import '../tugas/tugas_page.dart';
 import '../profile/profile_page.dart';
 import '../pengaturan/pengaturan_page.dart';
 import '../auth/login_screen.dart';
+import '../../state/auth_controller.dart';
 import 'sidebar.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -26,11 +28,34 @@ class DashboardScreen extends StatelessWidget {
       );
     }
     
-    void logout() {
-      Navigator.of(context).pop();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+    void logout() async {
+      try {
+        // Call AuthController logout to clear token and state
+        final authController = Provider.of<AuthController>(context, listen: false);
+        await authController.logout();
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Berhasil keluar'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Navigate to login screen
+        Navigator.of(context).pop();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      } catch (e) {
+        // Show error message if logout fails
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout gagal: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
 
     return Scaffold(
