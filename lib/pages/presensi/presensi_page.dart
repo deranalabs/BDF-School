@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../dashboard/dashboard_page.dart';
 import '../dashboard/sidebar.dart';
 import '../tugas/tugas_page.dart';
@@ -23,36 +25,80 @@ class PresensiPage extends StatefulWidget {
 class _PresensiPageState extends State<PresensiPage> {
   final _searchController = TextEditingController();
   final _dateController = TextEditingController(text: '12/22/2025');
+  final _baseUrl = 'http://192.168.110.83:3000';
   String _selectedClass = 'Semua Kelas';
   
-  final List<_PresenceRecord> _records = [
-    const _PresenceRecord(
-      name: 'Bayu Mulyana',
-      kelas: 'Kelas 2',
-      time: '07:45',
-      status: PresenceStatus.hadir,
-    ),
-    const _PresenceRecord(
-      name: 'Daya Pratama',
-      kelas: 'Kelas 3',
-      time: '07:50',
-      status: PresenceStatus.izin,
-    ),
-    const _PresenceRecord(
-      name: 'Fira Riyanti',
-      kelas: 'Kelas 4',
-      time: '07:55',
-      status: PresenceStatus.sakit,
-    ),
-    const _PresenceRecord(
-      name: 'Ahmad Fauzi',
-      kelas: 'Kelas 1',
-      time: '07:58',
-      status: PresenceStatus.alpa,
-    ),
-  ];
+  List<_PresenceRecord> _records = [];
+  bool _isLoading = false;
+  String? _error;
 
-  void _changeStatus(_PresenceRecord record, PresenceStatus status) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchPresensi();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchPresensi() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/api/presensi'));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final records = (data['data'] as List)
+              .map((record) => _PresenceRecord(
+                    name: record['nama_siswa'] ?? 'Unknown',
+                    nis: record['nis'] ?? '',
+                    kelas: 'Kelas 1', // Hardcoded for now
+                    status: _parseStatus(record['status']),
+                    time: '07:30', // Hardcoded for now
+                  ))
+              .toList();
+          
+          setState(() {
+            _records = records;
+            _isLoading = false;
+          });
+        }
+      } else {
+        throw Exception('Failed to load presensi');
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Gagal memuat presensi: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  _PresenceStatus _parseStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'hadir':
+        return _PresenceStatus.hadir;
+      case 'izin':
+        return _PresenceStatus.izin;
+      case 'sakit':
+        return _PresenceStatus.sakit;
+      case 'alfa':
+        return _PresenceStatus.alfa;
+      default:
+        return _PresenceStatus.hadir;
+    }
+  }
+
+  void _changeStatus(_PresenceRecord record, _PresenceStatus status) {
     setState(() {
       final idx = _records.indexOf(record);
       if (idx != -1) {
@@ -76,15 +122,8 @@ class _PresensiPageState extends State<PresensiPage> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    _dateController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    int count(PresenceStatus status) => _records.where((r) => r.status == status).length;
+    int count(_PresenceStatus status) => _records.where((r) => r.status == status).length;
     final query = _searchController.text.trim().toLowerCase();
     final visibleRecords = _records.where((r) {
       final matchClass = _selectedClass == 'Semua Kelas' || r.kelas == _selectedClass;
@@ -171,7 +210,7 @@ class _PresensiPageState extends State<PresensiPage> {
                     Expanded(
                       child: _StatCard(
                         title: 'Hadir',
-                        value: count(PresenceStatus.hadir).toString(),
+                        value: count(_PresenceStatus.hadir).toString(),
                         color: const Color(0xFF4CAF50),
                         icon: Icons.check_circle,
                       ),
@@ -180,7 +219,7 @@ class _PresensiPageState extends State<PresensiPage> {
                     Expanded(
                       child: _StatCard(
                         title: 'Izin',
-                        value: count(PresenceStatus.izin).toString(),
+                        value: count(_PresenceStatus.izin).toString(),
                         color: const Color(0xFF2196F3),
                         icon: Icons.description,
                       ),
@@ -193,7 +232,7 @@ class _PresensiPageState extends State<PresensiPage> {
                     Expanded(
                       child: _StatCard(
                         title: 'Sakit',
-                        value: count(PresenceStatus.sakit).toString(),
+                        value: count(_PresenceStatus.sakit).toString(),
                         color: const Color(0xFFFF9800),
                         icon: Icons.medical_services,
                       ),
@@ -202,7 +241,7 @@ class _PresensiPageState extends State<PresensiPage> {
                     Expanded(
                       child: _StatCard(
                         title: 'Alpha',
-                        value: count(PresenceStatus.alpa).toString(),
+                        value: count(_PresenceStatus.alfa).toString(),
                         color: const Color(0xFFF44336),
                         icon: Icons.cancel,
                       ),
@@ -214,77 +253,141 @@ class _PresensiPageState extends State<PresensiPage> {
           ),
           // Content Section
           Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
+            child: _buildContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFDB45B)),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
               ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    // Filter Section
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _FilterDropdown(
-                            value: _selectedClass,
-                            items: const ['Semua Kelas', 'Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4'],
-                            onChanged: (v) => setState(() => _selectedClass = v ?? 'Semua Kelas'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _DateField(
-                            controller: _dateController,
-                            onTap: _pickDate,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Search Field
-                    TextField(
-                      controller: _searchController,
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        hintText: 'Nama Siswa',
-                        hintStyle: const TextStyle(color: Color(0xFF9AA5B5)),
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFF9AA5B5)),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Records List
-                    ...visibleRecords.map(
-                      (r) => _PresenceCard(
-                        record: r,
-                        onChangeStatus: (status) => _changeStatus(r, status),
-                      ),
-                    ),
-                  ],
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _fetchPresensi,
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_records.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.how_to_reg_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Belum ada data presensi',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30),
+          topRight: Radius.circular(30),
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // Filter Section
+            Row(
+              children: [
+                Expanded(
+                  child: _FilterDropdown(
+                    value: _selectedClass,
+                    items: const ['Semua Kelas', 'Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4'],
+                    onChanged: (v) => setState(() => _selectedClass = v ?? 'Semua Kelas'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _DateField(
+                    controller: _dateController,
+                    onTap: _pickDate,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Search Field
+            TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: 'Nama Siswa',
+                hintStyle: const TextStyle(color: Color(0xFF9AA5B5)),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF9AA5B5)),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            // Records List
+            ..._records.map(
+              (r) => _PresenceCard(
+                record: r,
+                onChangeStatus: (status) => _changeStatus(r, status),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -448,7 +551,7 @@ class _PresenceCard extends StatelessWidget {
   });
 
   final _PresenceRecord record;
-  final void Function(PresenceStatus) onChangeStatus;
+  final void Function(_PresenceStatus) onChangeStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -531,7 +634,7 @@ class _PresenceCard extends StatelessWidget {
     );
   }
 
-  void _showStatusMenu(BuildContext context, void Function(PresenceStatus) onChangeStatus) {
+  void _showStatusMenu(BuildContext context, void Function(_PresenceStatus) onChangeStatus) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -567,7 +670,7 @@ class _PresenceCard extends StatelessWidget {
                 icon: Icons.check_circle,
                 onTap: () {
                   Navigator.pop(context);
-                  onChangeStatus(PresenceStatus.hadir);
+                  onChangeStatus(_PresenceStatus.hadir);
                 },
               ),
               _StatusMenuItem(
@@ -576,7 +679,7 @@ class _PresenceCard extends StatelessWidget {
                 icon: Icons.description,
                 onTap: () {
                   Navigator.pop(context);
-                  onChangeStatus(PresenceStatus.izin);
+                  onChangeStatus(_PresenceStatus.izin);
                 },
               ),
               _StatusMenuItem(
@@ -585,7 +688,7 @@ class _PresenceCard extends StatelessWidget {
                 icon: Icons.medical_services,
                 onTap: () {
                   Navigator.pop(context);
-                  onChangeStatus(PresenceStatus.sakit);
+                  onChangeStatus(_PresenceStatus.sakit);
                 },
               ),
               _StatusMenuItem(
@@ -594,7 +697,7 @@ class _PresenceCard extends StatelessWidget {
                 icon: Icons.cancel,
                 onTap: () {
                   Navigator.pop(context);
-                  onChangeStatus(PresenceStatus.alpa);
+                  onChangeStatus(_PresenceStatus.alfa);
                 },
               ),
             ],
@@ -652,7 +755,7 @@ class _StatusMenuItem extends StatelessWidget {
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
 
-  final PresenceStatus status;
+  final _PresenceStatus status;
 
   @override
   Widget build(BuildContext context) {
@@ -661,22 +764,22 @@ class _StatusBadge extends StatelessWidget {
     IconData icon;
     
     switch (status) {
-      case PresenceStatus.hadir:
+      case _PresenceStatus.hadir:
         color = const Color(0xFF4CAF50);
         label = 'Hadir';
         icon = Icons.check_circle;
         break;
-      case PresenceStatus.izin:
+      case _PresenceStatus.izin:
         color = const Color(0xFF2196F3);
         label = 'Izin';
         icon = Icons.description;
         break;
-      case PresenceStatus.sakit:
+      case _PresenceStatus.sakit:
         color = const Color(0xFFFF9800);
         label = 'Sakit';
         icon = Icons.medical_services;
         break;
-      case PresenceStatus.alpa:
+      case _PresenceStatus.alfa:
         color = const Color(0xFFF44336);
         label = 'Alpha';
         icon = Icons.cancel;
@@ -708,16 +811,18 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-enum PresenceStatus { hadir, izin, sakit, alpa }
+enum _PresenceStatus { hadir, izin, sakit, alfa }
 
 class _PresenceRecord {
   final String name;
+  final String nis;
   final String kelas;
   final String time;
-  final PresenceStatus status;
+  final _PresenceStatus status;
   
   const _PresenceRecord({
     required this.name,
+    this.nis = '',
     required this.kelas,
     required this.time,
     required this.status,
@@ -725,12 +830,14 @@ class _PresenceRecord {
 
   _PresenceRecord copyWith({
     String? name,
+    String? nis,
     String? kelas,
     String? time,
-    PresenceStatus? status,
+    _PresenceStatus? status,
   }) {
     return _PresenceRecord(
       name: name ?? this.name,
+      nis: nis ?? this.nis,
       kelas: kelas ?? this.kelas,
       time: time ?? this.time,
       status: status ?? this.status,

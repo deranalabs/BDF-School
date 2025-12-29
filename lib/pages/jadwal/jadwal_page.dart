@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../dashboard/dashboard_page.dart';
 import '../dashboard/sidebar.dart';
 import '../presensi/presensi_page.dart';
@@ -20,9 +22,146 @@ class JadwalPage extends StatefulWidget {
   State<JadwalPage> createState() => _JadwalPageState();
 }
 
+class _ScheduleItem {
+  final String? id;
+  final String mapel;
+  final String kelas;
+  final String guru;
+  final String hari;
+  final String jamMulai;
+  final String jamSelesai;
+
+  const _ScheduleItem({
+    this.id,
+    required this.mapel,
+    required this.kelas,
+    required this.guru,
+    required this.hari,
+    required this.jamMulai,
+    required this.jamSelesai,
+  });
+}
+
 class _JadwalPageState extends State<JadwalPage> {
   final List<String> _days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
   int _selectedDay = 0;
+  final _baseUrl = 'http://192.168.110.83:3000';
+  List<_ScheduleItem> _items = [];
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSchedule();
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE8D5B5)),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 12),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: _fetchSchedule, child: const Text('Coba Lagi')),
+          ],
+        ),
+      );
+    }
+
+    final day = _days[_selectedDay];
+    final visible = _items.where((e) => e.hari.toLowerCase() == day.toLowerCase()).toList();
+
+    if (visible.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.event_note, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 12),
+            const Text('Tidak ada jadwal untuk hari ini'),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: visible.length,
+      itemBuilder: (ctx, i) {
+        final item = visible[i];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _ScheduleCard(
+            item: item,
+            color: const Color(0xFFE3F2FD),
+            borderColor: const Color(0xFF64B5F6),
+          ),
+        );
+      },
+    );
+  }
+
+
+  Future<void> _fetchSchedule() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final res = await http.get(Uri.parse('$_baseUrl/api/jadwal'));
+      debugPrint(res.body);
+      if (res.statusCode != 200) throw Exception('Failed to load jadwal');
+
+        final data = jsonDecode(res.body);
+        debugPrint("data fetch: ${data.toString()}");
+        if (data['success'] == true) {
+          final list = (data['data'] as List)
+            .map((e) {
+              final jamRaw = (e['jam'] ?? '') as String;
+              final parts = jamRaw.split('-');
+              final jamMulai = parts.isNotEmpty ? parts.first : '';
+              final jamSelesai = parts.length > 1 ? parts[1] : '';
+              return _ScheduleItem(
+                id: e['id']?.toString(),
+                mapel: (e['mata_pelajaran'] ?? e['mapel'] ?? '').toString(),
+                kelas: (e['kelas'] ?? '').toString(),
+                guru: (e['guru'] ?? '').toString(),
+                hari: (e['hari'] ?? '').toString(),
+                jamMulai: jamMulai,
+                jamSelesai: jamSelesai,
+              );
+            })
+              .toList();
+          setState(() {
+            _items = list;
+            _isLoading = false;
+          });
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load jadwal');
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Gagal memuat jadwal: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -154,42 +293,39 @@ class _JadwalPageState extends State<JadwalPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(_days.length, (index) {
-                      final isActive = index == _selectedDay;
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          right: index == _days.length - 1 ? 0 : 10,
-                        ),
-                        child: GestureDetector(
+                SizedBox(
+                  height: 48,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: List.generate(_days.length, (index) {
+                        final isActive = index == _selectedDay;
+                        return GestureDetector(
                           onTap: () => setState(() => _selectedDay = index),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 10,
-                            ),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 6),
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                             decoration: BoxDecoration(
-                              color: isActive
-                                  ? const Color(0xFFFDB45B)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                              color: isActive ? const Color(0xFFE8D5B5) : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isActive ? const Color(0xFFE8D5B5) : Colors.grey[300]!,
+                              ),
                             ),
                             child: Text(
                               _days[index],
                               style: TextStyle(
-                                color: isActive
-                                    ? const Color(0xFF0A1F44)
-                                    : Colors.black87,
+                                color: isActive ? const Color(0xFF0A1F44) : Colors.black87,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    }),
+                        );
+                      }),
+                    ),
                   ),
                 ),
               ],
@@ -200,38 +336,7 @@ class _JadwalPageState extends State<JadwalPage> {
           Expanded(
             child: Container(
               color: const Color(0xFFF5F5F5),
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  _ScheduleCard(
-                    title: 'Matematika',
-                    kelas: 'Kelas 1',
-                    time: '08:00-09:30',
-                    room: 'R. Kelas',
-                    teacher: 'Bu Dian',
-                    color: const Color(0xFFE3F2FD),
-                    borderColor: const Color(0xFF64B5F6),
-                  ),
-                  _ScheduleCard(
-                    title: 'Bahasa Indonesia',
-                    kelas: 'Kelas 1',
-                    time: '09:30-11:00',
-                    room: 'R. Kelas',
-                    teacher: 'Bu Sarah',
-                    color: const Color(0xFFF3E5F5),
-                    borderColor: const Color(0xFFBA68C8),
-                  ),
-                  _ScheduleCard(
-                    title: 'Bahasa Inggris',
-                    kelas: 'Kelas 1',
-                    time: '13:00-14:30',
-                    room: 'R. Kelas',
-                    teacher: 'Miss Kayla',
-                    color: const Color(0xFFFFF9E6),
-                    borderColor: const Color(0xFFFFD54F),
-                  ),
-                ],
-              ),
+              child: _buildContent(),
             ),
           ),
         ],
@@ -244,7 +349,6 @@ class _JadwalPageState extends State<JadwalPage> {
     String? kelas;
     String? hari;
     final teacherController = TextEditingController();
-    final roomController = TextEditingController();
     final startController = TextEditingController();
     final endController = TextEditingController();
 
@@ -337,16 +441,6 @@ class _JadwalPageState extends State<JadwalPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _LabeledField(
-                            label: 'Ruangan',
-                            child: TextField(
-                              controller: roomController,
-                              decoration: _fieldDecoration('Ruangan'),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                     _LabeledField(
@@ -388,22 +482,43 @@ class _JadwalPageState extends State<JadwalPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
+                        onPressed: () async {
                           if (subject == null ||
                               kelas == null ||
                               hari == null ||
                               teacherController.text.isEmpty ||
-                              roomController.text.isEmpty ||
                               startController.text.isEmpty ||
                               endController.text.isEmpty) {
-                            showFeedback(
-                              context,
-                              'Lengkapi semua field',
-                            );
+                            showFeedback(context, 'Lengkapi semua field');
                             return;
                           }
-                          Navigator.of(context).pop();
-                          showFeedback(context, 'Jadwal berhasil disimpan');
+
+                          try {
+                            final res = await http.post(
+                              Uri.parse('$_baseUrl/api/jadwal'),
+                              headers: {'Content-Type': 'application/json'},
+                              body: jsonEncode({
+                                'mapel': subject,
+                                'kelas': kelas,
+                                'guru': teacherController.text,
+                                'hari': hari,
+                                'jam_mulai': startController.text,
+                                'jam_selesai': endController.text,
+                              }),
+                            );
+
+                            debugPrint(res.body);
+
+                            if (res.statusCode == 201) {
+                              Navigator.of(context).pop();
+                              await _fetchSchedule();
+                              showFeedback(context, 'Jadwal berhasil ditambahkan');
+                            } else {
+                              showFeedback(context, 'Gagal menambahkan jadwal');
+                            }
+                          } catch (e) {
+                            showFeedback(context, 'Error: $e');
+                          }
                         },
                         child: const Text(
                           'Simpan Jadwal',
@@ -448,25 +563,19 @@ class _JadwalPageState extends State<JadwalPage> {
 
 class _ScheduleCard extends StatelessWidget {
   const _ScheduleCard({
-    required this.title,
-    required this.kelas,
-    required this.time,
-    required this.room,
-    required this.teacher,
+    required this.item,
     required this.color,
     required this.borderColor,
   });
 
-  final String title;
-  final String kelas;
-  final String time;
-  final String room;
-  final String teacher;
+  final _ScheduleItem item;
   final Color color;
   final Color borderColor;
 
+
   @override
   Widget build(BuildContext context) {
+    final time = '${item.jamMulai}-${item.jamSelesai}'.trim();
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
@@ -488,7 +597,7 @@ class _ScheduleCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      item.mapel,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -506,7 +615,7 @@ class _ScheduleCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        kelas,
+                        item.kelas,
                         style: const TextStyle(
                           color: Color(0xFF0A1F44),
                           fontWeight: FontWeight.w600,
@@ -550,25 +659,6 @@ class _ScheduleCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                size: 18,
-                color: Color(0xFF0A1F44),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                room,
-                style: const TextStyle(
-                  color: Color(0xFF0A1F44),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -598,7 +688,7 @@ class _ScheduleCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                teacher,
+                item.guru,
                 style: const TextStyle(
                   color: Color(0xFF0A1F44),
                   fontSize: 14,

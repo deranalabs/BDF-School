@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../dashboard/dashboard_page.dart';
 import '../pengumuman/pengumuman_page.dart';
@@ -21,46 +24,18 @@ class DaftarSiswaPage extends StatefulWidget {
 
 class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
   final _searchController = TextEditingController();
+  final _baseUrl = 'http://192.168.110.83:3000';
   String _selectedClass = 'Semua Kelas';
 
-  final List<_Student> _students = const [
-    _Student(
-      name: 'Ahmad Fauzi',
-      nis: '202503',
-      kelas: 'Kelas 1',
-      email: 'ahmad.fauzi@student.com',
-      phone: '081234567890',
-      status: 'Aktif',
-      initial: 'A',
-    ),
-    _Student(
-      name: 'Bayu Mulyana',
-      nis: '202501',
-      kelas: 'Kelas 2',
-      email: 'bayu.mulyana@student.com',
-      phone: '081234565431',
-      status: 'Aktif',
-      initial: 'B',
-    ),
-    _Student(
-      name: 'Dava Pratama',
-      nis: '202502',
-      kelas: 'Kelas 3',
-      email: 'dava.pratama@student.com',
-      phone: '080987654321',
-      status: 'Aktif',
-      initial: 'D',
-    ),
-    _Student(
-      name: 'Fira Riyanti',
-      nis: '202503',
-      kelas: 'Kelas 4',
-      email: 'fira.riyanti@student.com',
-      phone: '089876123450',
-      status: 'Aktif',
-      initial: 'F',
-    ),
-  ];
+  List<_Student> _students = [];
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStudents();
+  }
 
   @override
   void dispose() {
@@ -68,14 +43,49 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
     super.dispose();
   }
 
+  Future<void> _fetchStudents() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/api/siswa'));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final students = (data['data'] as List)
+              .map((student) => _Student(
+                    id: student['id'].toString(),
+                    name: student['nama'],
+                    nis: student['nis'],
+                    kelas: student['kelas'],
+                    jurusan: student['jurusan'],
+                  ))
+              .toList();
+          
+          setState(() {
+            _students = students;
+            _isLoading = false;
+          });
+        }
+      } else {
+        throw Exception('Failed to load students');
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Gagal memuat siswa: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
   void _openAddStudentDialog() {
     final nameController = TextEditingController();
     final nisController = TextEditingController();
-    final emailController = TextEditingController();
-    final phoneController = TextEditingController();
-    final usernameController = TextEditingController();
-    final passwordController = TextEditingController();
     String? kelas;
+    String? jurusan;
 
     showDialog(
       context: context,
@@ -137,22 +147,17 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                   children: [
                     Expanded(
                       child: _LabeledField(
-                        label: 'Email',
-                        child: TextField(
-                          controller: emailController,
+                        label: 'Jurusan',
+                        child: DropdownButtonFormField<String>(
+                          dropdownColor: const Color(0xFF1A3A6B),
                           style: const TextStyle(color: Colors.white),
-                          decoration: _inputDecoration('email@student.com'),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _LabeledField(
-                        label: 'No. Telepon',
-                        child: TextField(
-                          controller: phoneController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: _inputDecoration('08123456789'),
+                          decoration: _inputDecoration('Pilih jurusan'),
+                          items: const [
+                            DropdownMenuItem(value: 'IPA', child: Text('IPA')),
+                            DropdownMenuItem(value: 'IPS', child: Text('IPS')),
+                            DropdownMenuItem(value: 'Umum', child: Text('Umum')),
+                          ],
+                          onChanged: (v) => jurusan = v,
                         ),
                       ),
                     ),
@@ -166,67 +171,12 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                     style: const TextStyle(color: Colors.white),
                     decoration: _inputDecoration('Pilih kelas'),
                     items: const [
-                      DropdownMenuItem(value: 'Kelas 10', child: Text('Kelas 10')),
-                      DropdownMenuItem(value: 'Kelas 11', child: Text('Kelas 11')),
-                      DropdownMenuItem(value: 'Kelas 12', child: Text('Kelas 12')),
+                      DropdownMenuItem(value: 'Kelas 1', child: Text('Kelas 1')),
+                      DropdownMenuItem(value: 'Kelas 2', child: Text('Kelas 2')),
+                      DropdownMenuItem(value: 'Kelas 3', child: Text('Kelas 3')),
+                      DropdownMenuItem(value: 'Kelas 4', child: Text('Kelas 4')),
                     ],
                     onChanged: (v) => kelas = v,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _LabeledField(
-                  label: 'Alamat',
-                  child: TextField(
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('Alamat lengkap'),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white24),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Akun Login Siswa',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _LabeledField(
-                              label: 'Username',
-                              child: TextField(
-                                controller: usernameController,
-                                style: const TextStyle(color: Colors.white),
-                                decoration: _inputDecoration('Username'),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _LabeledField(
-                              label: 'Password',
-                              child: TextField(
-                                controller: passwordController,
-                                style: const TextStyle(color: Colors.white),
-                                decoration: _inputDecoration('Password'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -238,23 +188,38 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                       backgroundColor: const Color(0xFFE8D5B5),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: () {
-                      if (nameController.text.isEmpty ||
-                          nisController.text.isEmpty ||
-                          emailController.text.isEmpty ||
-                          phoneController.text.isEmpty ||
-                          kelas == null ||
-                          usernameController.text.isEmpty ||
-                          passwordController.text.isEmpty) {
-                        showFeedback(context, 'Lengkapi semua field');
+                    onPressed: () async {
+                      if (nameController.text.isEmpty || nisController.text.isEmpty || kelas == null || jurusan == null) {
+                        showFeedback(context, 'Harap lengkapi data (nama, NIS, kelas, jurusan)');
                         return;
                       }
-                      Navigator.of(context).pop();
-                      showFeedback(context, 'Siswa berhasil ditambahkan');
+
+                      try {
+                        final res = await http.post(
+                          Uri.parse('$_baseUrl/api/siswa'),
+                          headers: {'Content-Type': 'application/json'},
+                          body: jsonEncode({
+                            'nama': nameController.text,
+                            'nis': nisController.text,
+                            'kelas': kelas,
+                            'jurusan': jurusan,
+                          }),
+                        );
+
+                        if (res.statusCode == 201) {
+                          Navigator.of(context).pop();
+                          await _fetchStudents();
+                          showFeedback(context, 'Siswa berhasil ditambahkan');
+                        } else {
+                          showFeedback(context, 'Gagal menambah siswa');
+                        }
+                      } catch (e) {
+                        showFeedback(context, 'Error: $e');
+                      }
                     },
-                    icon: const Icon(Icons.person_add, color: Color(0xFF0A1E4A)),
+                    icon: const Icon(Icons.save, color: Color(0xFF0A1E4A)),
                     label: const Text(
-                      'Daftarkan Siswa',
+                      'Simpan Data',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -482,16 +447,313 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    ..._students.map((s) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _StudentCard(student: s),
-                    )),
+                    _buildContent(),
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE8D5B5)),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _fetchStudents,
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_students.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Belum ada data siswa',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: _students.asMap().entries.map((entry) {
+        final index = entry.key;
+        final student = entry.value;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _StudentCard(
+            student: student,
+            onEdit: () => _showEditStudentDialog(student),
+            onDelete: () => _showDeleteStudentDialog(student),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  void _showEditStudentDialog(_Student student) {
+    final nameController = TextEditingController(text: student.name);
+    final nisController = TextEditingController(text: student.nis);
+    String? kelas = student.kelas;
+    String? jurusan = student.jurusan;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0A1F44),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Edit Siswa',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: nameController,
+                decoration: _inputDecoration('Nama Siswa'),
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nisController,
+                decoration: _inputDecoration('NIS'),
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: kelas,
+                decoration: _inputDecoration('Kelas'),
+                dropdownColor: const Color(0xFF0A1F44),
+                style: const TextStyle(color: Colors.white),
+                items: const ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4']
+                    .map((k) => DropdownMenuItem(value: k, child: Text(k)))
+                    .toList(),
+                onChanged: (v) => kelas = v,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: jurusan,
+                decoration: _inputDecoration('Jurusan'),
+                dropdownColor: const Color(0xFF0A1F44),
+                style: const TextStyle(color: Colors.white),
+                items: const ['Rekayasa Perangkat Lunak', 'Multimedia', 'Teknik Komputer Jaringan']
+                    .map((j) => DropdownMenuItem(value: j, child: Text(j)))
+                    .toList(),
+                onChanged: (v) => jurusan = v,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Batal', style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE8D5B5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () async {
+                        try {
+                          final prefs = await SharedPreferences.getInstance();
+                          final token = prefs.getString('auth_token');
+                          if (token == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Not authenticated')),
+                            );
+                            return;
+                          }
+
+                          final response = await http.put(
+                            Uri.parse('$_baseUrl/api/siswa/${student.id}'),
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': 'Bearer $token',
+                            },
+                            body: jsonEncode({
+                              'name': nameController.text,
+                              'nis': nisController.text,
+                              'kelas': kelas,
+                              'jurusan': jurusan,
+                            }),
+                          );
+
+                          if (response.statusCode == 200) {
+                            Navigator.of(ctx).pop();
+                            _fetchStudents();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Data siswa berhasil diperbarui'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else {
+                            final body = jsonDecode(response.body);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(body['message'] ?? 'Gagal memperbarui siswa'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text(
+                        'Simpan',
+                        style: TextStyle(
+                          color: Color(0xFF0A1F44),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteStudentDialog(_Student student) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Siswa'),
+        content: Text('Apakah Anda yakin ingin menghapus siswa "${student.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              try {
+                final prefs = await SharedPreferences.getInstance();
+                final token = prefs.getString('auth_token');
+                if (token == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Not authenticated')),
+                  );
+                  return;
+                }
+
+                final response = await http.delete(
+                  Uri.parse('$_baseUrl/api/siswa/${student.id}'),
+                  headers: {'Authorization': 'Bearer $token'},
+                );
+
+                if (response.statusCode == 200) {
+                  Navigator.of(ctx).pop();
+                  _fetchStudents();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Siswa berhasil dihapus'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  final body = jsonDecode(response.body);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(body['message'] ?? 'Gagal menghapus siswa'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
@@ -564,9 +826,11 @@ class _StatCard extends StatelessWidget {
 }
 
 class _StudentCard extends StatelessWidget {
-  const _StudentCard({required this.student});
+  const _StudentCard({required this.student, required this.onEdit, required this.onDelete});
 
   final _Student student;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -594,7 +858,7 @@ class _StudentCard extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                student.initial,
+                student.name.isNotEmpty ? student.name[0].toUpperCase() : 'S',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -622,11 +886,11 @@ class _StudentCard extends StatelessWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 20),
-                      onPressed: () {},
+                      onPressed: onEdit,
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                      onPressed: () {},
+                      onPressed: onDelete,
                     ),
                   ],
                 ),
@@ -637,18 +901,11 @@ class _StudentCard extends StatelessWidget {
                   children: [
                     _Chip(text: 'NIS : ${student.nis}', color: Colors.black54, bg: Colors.grey[200]!),
                     _Chip(text: student.kelas, color: const Color(0xFF5B8DEF), bg: const Color(0xFFE8F0FF)),
-                    _Chip(text: student.status, color: const Color(0xFF45C27C), bg: const Color(0xFFE8F8EF)),
+                    _Chip(text: student.jurusan, color: const Color(0xFF45C27C), bg: const Color(0xFFE8F8EF)),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 14,
-                  runSpacing: 6,
-                  children: [
-                    _InfoRow(icon: Icons.email_outlined, text: student.email),
-                    _InfoRow(icon: Icons.phone_outlined, text: student.phone),
-                  ],
-                ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -668,16 +925,16 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
           color: color,
         ),
       ),
@@ -711,22 +968,18 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _Student {
+  final String? id;
   final String name;
   final String nis;
   final String kelas;
-  final String email;
-  final String phone;
-  final String status;
-  final String initial;
+  final String jurusan;
 
   const _Student({
+    this.id,
     required this.name,
     required this.nis,
     required this.kelas,
-    required this.email,
-    required this.phone,
-    required this.status,
-    required this.initial,
+    required this.jurusan,
   });
 }
 

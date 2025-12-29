@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 import '../dashboard/dashboard_page.dart';
 import '../dashboard/sidebar.dart';
@@ -25,27 +27,17 @@ class _PengumumanPageState extends State<PengumumanPage> {
   final _targetController = TextEditingController();
   final _dateController = TextEditingController();
   final _messageController = TextEditingController();
+  final _baseUrl = 'http://192.168.110.83:3000';
 
-  final List<_Announcement> _announcements = [
-    _Announcement(
-      title: 'Libur Nasional',
-      description: 'Sekolah libur dalam rangka hari natal',
-      date: '25 Desember 2025',
-      target: 'Semua Kelas',
-    ),
-    _Announcement(
-      title: 'Ujian Tengah Semester',
-      description: 'Harap siswa mempersiapkan diri dengan baik',
-      date: '5 Desember 2025',
-      target: 'Semua Kelas',
-    ),
-    _Announcement(
-      title: 'Lomba Karya Ilmiah',
-      description: 'Pendaftaran lomba karya ilmiah antar sekolah dibuka hingga 30 Desember 2025',
-      date: '5 Desember 2025',
-      target: 'Semua Kelas',
-    ),
-  ];
+  List<_Announcement> _announcements = [];
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPengumuman();
+  }
 
   @override
   void dispose() {
@@ -55,6 +47,45 @@ class _PengumumanPageState extends State<PengumumanPage> {
     _dateController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchPengumuman() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/api/pengumuman'));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final announcements = (data['data'] as List)
+              .map((item) => _Announcement(
+                    title: item['judul'] ?? 'Unknown',
+                    category: item['prioritas'] ?? 'medium',
+                    target: 'Semua',
+                    date: item['tanggal'] ?? '2025-12-25',
+                    message: item['isi'] ?? '',
+                    isPinned: item['prioritas'] == 'high',
+                  ))
+              .toList();
+          
+          setState(() {
+            _announcements = announcements;
+            _isLoading = false;
+          });
+        }
+      } else {
+        throw Exception('Failed to load pengumuman');
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Gagal memuat pengumuman: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   void _openCreateDialog() {
@@ -306,17 +337,81 @@ class _PengumumanPageState extends State<PengumumanPage> {
                   ),
                 ),
                 padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: _announcements.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _AnnouncementCard(data: item),
-                  )).toList(),
-                ),
+                child: _buildContent(),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFDB45B)),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _fetchPengumuman,
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_announcements.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.campaign_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Belum ada pengumuman',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: _announcements.map((item) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: _AnnouncementCard(data: item),
+      )).toList(),
     );
   }
 
@@ -390,7 +485,7 @@ class _AnnouncementCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            data.description,
+            data.message,
             style: const TextStyle(
               fontSize: 14,
               color: Colors.black87,
@@ -428,15 +523,19 @@ class _AnnouncementCard extends StatelessWidget {
 
 class _Announcement {
   final String title;
-  final String description;
+  final String message;
   final String date;
   final String target;
+  final String category;
+  final bool isPinned;
 
   const _Announcement({
     required this.title,
-    required this.description,
+    required this.message,
     required this.date,
     required this.target,
+    this.category = 'medium',
+    this.isPinned = false,
   });
 }
 

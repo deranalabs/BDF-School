@@ -2,6 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../utils/api_client.dart';
 import '../jadwal/jadwal_page.dart';
 import '../nilai/nilai_page.dart';
 import '../pengumuman/pengumuman_page.dart';
@@ -14,8 +18,90 @@ import '../auth/login_screen.dart';
 import '../../state/auth_controller.dart';
 import 'sidebar.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final _baseUrl = dotenv.env['BASE_URL'] ?? 'http://192.168.110.83:3000';
+  int _totalSiswa = 0;
+  int _totalTugas = 0;
+  int _totalPengumuman = 0;
+  int _kehadiranHariIni = 0;
+  bool _isLoading = true;
+  String? _error;
+  late ApiClient _api;
+
+  @override
+  void initState() {
+    super.initState();
+    _api = ApiClient(context.read<AuthController>());
+    _fetchDashboardData();
+  }
+
+  Future<void> _fetchDashboardData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final responses = await Future.wait<http.Response>([
+        _api.get('/api/siswa'),
+        _api.get('/api/tugas'),
+        _api.get('/api/pengumuman'),
+        _api.get('/api/presensi'),
+      ]);
+
+      final siswaResponse = responses[0];
+      final tugasResponse = responses[1];
+      final pengumumanResponse = responses[2];
+      final presensiResponse = responses[3];
+
+      int totalSiswa = 0;
+      int totalTugas = 0;
+      int totalPengumuman = 0;
+      int kehadiranHariIni = 0;
+
+      if (siswaResponse.statusCode == 200) {
+        final data = jsonDecode(siswaResponse.body);
+        totalSiswa = data['success'] == true ? (data['data'] as List).length : 0;
+      }
+      if (tugasResponse.statusCode == 200) {
+        final data = jsonDecode(tugasResponse.body);
+        totalTugas = data['success'] == true ? (data['data'] as List).length : 0;
+      }
+      if (pengumumanResponse.statusCode == 200) {
+        final data = jsonDecode(pengumumanResponse.body);
+        totalPengumuman = data['success'] == true ? (data['data'] as List).length : 0;
+      }
+      if (presensiResponse.statusCode == 200) {
+        final data = jsonDecode(presensiResponse.body);
+        final today = DateTime.now().toIso8601String().split('T')[0];
+        final presensiList = data['success'] == true ? data['data'] as List : [];
+        kehadiranHariIni = presensiList.where((p) => 
+          p['tanggal']?.toString().startsWith(today) == true && 
+          p['status'] == 'hadir'
+        ).length;
+      }
+
+      setState(() {
+        _totalSiswa = totalSiswa;
+        _totalTugas = totalTugas;
+        _totalPengumuman = totalPengumuman;
+        _kehadiranHariIni = kehadiranHariIni;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,25 +116,19 @@ class DashboardScreen extends StatelessWidget {
     
     void logout() async {
       try {
-        // Call AuthController logout to clear token and state
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        
-        // Show success message
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Berhasil keluar'),
             backgroundColor: Colors.green,
           ),
         );
-        
-        // Navigate to login screen
-        Navigator.of(context).pop();
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
+
+        // Biarkan root auth Consumer yang mengarahkan ke LoginScreen
+        Navigator.of(context).popUntil((route) => route.isFirst);
       } catch (e) {
-        // Show error message if logout fails
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Logout gagal: $e'),
@@ -165,6 +245,41 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.error_outline, color: Colors.red.shade600),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _error ?? '',
+                                  style: TextStyle(
+                                    color: Colors.red.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.refresh),
+                                color: Colors.red.shade600,
+                                tooltip: 'Coba lagi',
+                                onPressed: _fetchDashboardData,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     // Cards Section
                     Transform.translate(
                       offset: const Offset(0, -30),
@@ -206,15 +321,17 @@ class DashboardScreen extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-                                      const Text(
-                                        '245',
-                                        style: TextStyle(
-                                          fontSize: 52,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF0A1F44),
-                                          height: 1,
-                                        ),
-                                      ),
+                                      _isLoading 
+                                          ? const CircularProgressIndicator(color: Color(0xFF0A1F44))
+                                          : Text(
+                                              _totalSiswa.toString(),
+                                              style: const TextStyle(
+                                                fontSize: 52,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF0A1F44),
+                                                height: 1,
+                                              ),
+                                            ),
                                       const SizedBox(height: 8),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
@@ -324,16 +441,19 @@ class DashboardScreen extends StatelessWidget {
                                           ],
                                         ),
                                         const SizedBox(height: 16),
-                                        const Text(
-                                          '98%',
-                                          style: TextStyle(
-                                            fontSize: 48,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                            height: 1,
-                                            letterSpacing: -1,
-                                          ),
-                                        ),
+                                        _isLoading 
+                                            ? const CircularProgressIndicator(color: Colors.white)
+                                            : Text(
+                                                _totalSiswa > 0 
+                                                    ? '${((_kehadiranHariIni / _totalSiswa) * 100).toStringAsFixed(0)}%'
+                                                    : '0%',
+                                                style: const TextStyle(
+                                                  fontSize: 48,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                  height: 1,
+                                                ),
+                                              ),
                                         const SizedBox(height: 16),
                                         Container(
                                           width: double.infinity,
@@ -407,15 +527,17 @@ class DashboardScreen extends StatelessWidget {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            const Text(
-                                              '12',
-                                              style: TextStyle(
-                                                fontSize: 36,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF0A1F44),
-                                                height: 1,
-                                              ),
-                                            ),
+                                            _isLoading 
+                                                ? const CircularProgressIndicator(color: Color(0xFF0A1F44))
+                                                : Text(
+                                                    _totalTugas.toString(),
+                                                    style: const TextStyle(
+                                                      fontSize: 36,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Color(0xFF0A1F44),
+                                                      height: 1,
+                                                    ),
+                                                  ),
                                             const SizedBox(height: 6),
                                             const Text(
                                               'Tugas Aktif',
@@ -461,15 +583,17 @@ class DashboardScreen extends StatelessWidget {
                                             Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                const Text(
-                                                  '5',
-                                                  style: TextStyle(
-                                                    fontSize: 36,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Color(0xFF0A1F44),
-                                                    height: 1,
-                                                  ),
-                                                ),
+                                                _isLoading 
+                                                    ? const CircularProgressIndicator(color: Color(0xFF0A1F44))
+                                                    : Text(
+                                                        _totalPengumuman.toString(),
+                                                        style: const TextStyle(
+                                                          fontSize: 36,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Color(0xFF0A1F44),
+                                                          height: 1,
+                                                        ),
+                                                      ),
                                                 Stack(
                                                   clipBehavior: Clip.none,
                                                   children: [
@@ -536,6 +660,37 @@ class DashboardScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (_error != null)
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.error_outline, color: Colors.red[700]),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'Gagal memuat data: $_error',
+                                            style: TextStyle(color: Colors.red[700]),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.refresh),
+                                          onPressed: _fetchDashboardData,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                             const Text(
                               'Aktvitas Terbaru',
                               style: TextStyle(

@@ -2,8 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 import '../../state/auth_controller.dart';
 import '../../utils/feedback.dart';
@@ -19,6 +17,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -106,132 +106,101 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Username',
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _usernameController,
-                          textInputAction: TextInputAction.next,
-                          style: const TextStyle(fontSize: 15.5),
-                          decoration: _inputDecoration(
-                            hintText: 'Masukkan username',
-                            prefixIcon: Icons.person_outline,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'Password',
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.done,
-                          style: const TextStyle(fontSize: 15.5),
-                          decoration: _inputDecoration(
-                            hintText: 'Masukkan password',
-                            prefixIcon: Icons.lock_outline,
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                color: const Color(0xFF95A2B7),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-                        _LoginButton(
-                          onLogin: () async {
-                            FocusScope.of(context).unfocus();
-                            final auth = context.read<AuthController>();
-                            try {
-                              await auth.login(
-                                _usernameController.text,
-                                _passwordController.text,
-                              );
-                              showFeedback(context, 'Login berhasil');
-                            } on AuthException catch (e) {
-                              showFeedback(context, e.message);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        // Debug connection test button
-                        SizedBox(
-                          height: 40,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () async {
-                              try {
-                                final response = await http.post(
-                                  Uri.parse('http://192.168.110.83:3000/api/auth/login'),
-                                  body: jsonEncode({'username': 'admin', 'password': 'admin123'}),
-                                  headers: {'Content-Type': 'application/json'},
-                                );
-                                showFeedback(context, 'Test: ${response.statusCode} - ${response.body}');
-                              } catch (e) {
-                                showFeedback(context, 'Test Error: $e');
-                              }
-                            },
-                            child: const Text(
-                              'Test Connection',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF6F8FB),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE5E8EF)),
-                          ),
-                          child: const Column(
+                        Form(
+                          key: _formKey,
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Demo Admin',
+                              const Text(
+                                'Username',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0F1F5C),
-                                  fontSize: 13.5,
+                                  color: Colors.black87,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              SizedBox(height: 6),
-                              Text(
-                                'Username: admin\nPassword: admin123',
+                              const SizedBox(height: 10),
+                              TextFormField(
+                                controller: _usernameController,
+                                textInputAction: TextInputAction.next,
+                                style: const TextStyle(fontSize: 15.5),
+                                decoration: _inputDecoration(
+                                  hintText: 'Masukkan username',
+                                  prefixIcon: Icons.person_outline,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Username tidak boleh kosong';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 18),
+                              const Text(
+                                'Password',
                                 style: TextStyle(
-                                  color: Color(0xFF4A5568),
-                                  fontSize: 13,
-                                  height: 1.4,
+                                  color: Colors.black87,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
+                              const SizedBox(height: 10),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                textInputAction: TextInputAction.done,
+                                style: const TextStyle(fontSize: 15.5),
+                                decoration: _inputDecoration(
+                                  hintText: 'Masukkan password',
+                                  prefixIcon: Icons.lock_outline,
+                                  suffixIcon: IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                      color: const Color(0xFF95A2B7),
+                                    ),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Password tidak boleh kosong';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 22),
+                              _LoginButton(
+                                isLoading: _isLoading,
+                                onLogin: () async {
+                                  if (_isLoading) return;
+                                  final formValid = _formKey.currentState?.validate() ?? false;
+                                  if (!formValid) return;
+                                  FocusScope.of(context).unfocus();
+                                  final auth = context.read<AuthController>();
+                                  setState(() => _isLoading = true);
+                                  try {
+                                    await auth.login(
+                                      _usernameController.text.trim(),
+                                      _passwordController.text,
+                                    );
+                                    showFeedback(context, 'Login berhasil');
+                                  } on AuthException catch (e) {
+                                    showFeedback(context, e.message);
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => _isLoading = false);
+                                    }
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              const _DemoHint(),
                             ],
                           ),
                         ),
@@ -269,31 +238,49 @@ class _BrandMark extends StatelessWidget {
 }
 
 class _LoginButton extends StatelessWidget {
-  const _LoginButton({required this.onLogin});
+  const _LoginButton({
+    required this.onLogin,
+    this.isLoading = false,
+  });
 
   final Future<void> Function() onLogin;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 54,
+      height: 56,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF0E1B4F),
-          elevation: 0.5,
+          elevation: 2,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
         ),
-        onPressed: onLogin,
-        child: const Row(
+        onPressed: isLoading ? null : onLogin,
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.login_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 10),
+            if (isLoading) ...[
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ] else ...[
+              const Icon(Icons.login_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+            ],
             Text(
-              'Masuk',
-              style: TextStyle(
+              isLoading ? 'Memproses...' : 'Masuk',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
