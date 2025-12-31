@@ -1,18 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const Nilai = require('../models/Nilai');
+const authMiddleware = require('../middleware/auth');
 
-// GET all nilai
+// Lindungi semua rute nilai (wajib JWT)
+router.use(authMiddleware);
+
+// Ambil semua data nilai (mendukung query opsional: siswa_id, semester, tahun_ajaran)
 router.get('/', async (req, res) => {
   try {
-    const list = await Nilai.getAll();
+    const { siswa_id, semester, tahun_ajaran } = req.query;
+    const list = await Nilai.getAll(siswa_id, semester, tahun_ajaran);
     res.json({ success: true, data: list });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// GET nilai by ID
+// Ambil detail nilai berdasarkan ID
 router.get('/:id', async (req, res) => {
   try {
     const item = await Nilai.getById(req.params.id);
@@ -25,12 +30,17 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST new nilai
+// Buat nilai baru
 router.post('/', async (req, res) => {
   try {
     const { siswa_id, mata_pelajaran, tugas, uts, uas, semester, tahun_ajaran } = req.body;
     if (!siswa_id || !mata_pelajaran || tugas == null || uts == null || uas == null || !semester || !tahun_ajaran) {
       return res.status(400).json({ success: false, message: 'siswa_id, mata_pelajaran, tugas, uts, uas, semester, tahun_ajaran required' });
+    }
+    const scores = [tugas, uts, uas];
+    const invalid = scores.some((v) => isNaN(v) || v < 0 || v > 100);
+    if (invalid) {
+      return res.status(400).json({ success: false, message: 'tugas, uts, uas harus dalam rentang 0-100' });
     }
 
     const created = await Nilai.create({ siswa_id, mata_pelajaran, tugas, uts, uas, semester, tahun_ajaran });
@@ -40,12 +50,17 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update nilai
+// Perbarui nilai
 router.put('/:id', async (req, res) => {
   try {
     const { siswa_id, mata_pelajaran, tugas, uts, uas, semester, tahun_ajaran } = req.body;
     if (!siswa_id || !mata_pelajaran || tugas == null || uts == null || uas == null || !semester || !tahun_ajaran) {
       return res.status(400).json({ success: false, message: 'siswa_id, mata_pelajaran, tugas, uts, uas, semester, tahun_ajaran required' });
+    }
+    const scores = [tugas, uts, uas];
+    const invalid = scores.some((v) => isNaN(v) || v < 0 || v > 100);
+    if (invalid) {
+      return res.status(400).json({ success: false, message: 'tugas, uts, uas harus dalam rentang 0-100' });
     }
 
     const updated = await Nilai.update(req.params.id, { siswa_id, mata_pelajaran, tugas, uts, uas, semester, tahun_ajaran });
@@ -58,7 +73,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE nilai
+// Hapus nilai
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Nilai.delete(req.params.id);

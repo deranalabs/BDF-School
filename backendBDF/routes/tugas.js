@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Tugas = require('../models/Tugas');
+const authMiddleware = require('../middleware/auth');
 
-// GET all tugas
+// Lindungi semua rute tugas (wajib JWT)
+router.use(authMiddleware);
+
+// Ambil semua data tugas
 router.get('/', async (req, res) => {
   try {
     const tugas = await Tugas.getAll();
@@ -18,7 +22,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET tugas by ID
+// Ambil detail tugas berdasarkan ID
 router.get('/:id', async (req, res) => {
   try {
     const tugas = await Tugas.getById(req.params.id);
@@ -40,10 +44,10 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create tugas
+// Buat tugas baru
 router.post('/', async (req, res) => {
   try {
-    const { judul, deskripsi, deadline, kelas, guru } = req.body;
+    const { judul, deskripsi, deadline, kelas, guru, status } = req.body;
     
     if (!judul || !deadline || !kelas || !guru) {
       return res.status(400).json({
@@ -57,7 +61,8 @@ router.post('/', async (req, res) => {
       deskripsi: deskripsi || '', 
       deadline, 
       kelas, 
-      guru 
+      guru,
+      status: status || 'aktif'
     });
     res.status(201).json({
       success: true,
@@ -72,10 +77,10 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update tugas
+// Perbarui tugas
 router.put('/:id', async (req, res) => {
   try {
-    const { judul, deskripsi, deadline, kelas, guru } = req.body;
+    const { judul, deskripsi, deadline, kelas, guru, status } = req.body;
     
     if (!judul || !deadline || !kelas || !guru) {
       return res.status(400).json({
@@ -89,7 +94,8 @@ router.put('/:id', async (req, res) => {
       deskripsi: deskripsi || '', 
       deadline, 
       kelas, 
-      guru 
+      guru,
+      status: status || 'aktif'
     });
     res.json({
       success: true,
@@ -104,7 +110,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE tugas
+// Hapus tugas
 router.delete('/:id', async (req, res) => {
   try {
     const result = await Tugas.delete(req.params.id);

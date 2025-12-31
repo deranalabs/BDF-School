@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Pengumuman = require('../models/Pengumuman');
+const authMiddleware = require('../middleware/auth');
 
-// GET all pengumuman
+// Lindungi semua rute pengumuman (wajib JWT)
+router.use(authMiddleware);
+
+// Ambil semua pengumuman
 router.get('/', async (req, res) => {
   try {
     const pengumuman = await Pengumuman.getAll();
@@ -18,7 +22,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET latest pengumuman
+// Ambil pengumuman terbaru
 router.get('/latest', async (req, res) => {
   try {
     const { limit = 5 } = req.query;
@@ -35,7 +39,7 @@ router.get('/latest', async (req, res) => {
   }
 });
 
-// GET pengumuman by ID
+// Ambil detail pengumuman berdasarkan ID
 router.get('/:id', async (req, res) => {
   try {
     const pengumuman = await Pengumuman.getById(req.params.id);
@@ -57,7 +61,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create pengumuman
+// Buat pengumuman baru
 router.post('/', async (req, res) => {
   try {
     const { judul, isi, pengirim, prioritas } = req.body;
@@ -95,7 +99,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update pengumuman
+// Perbarui pengumuman
 router.put('/:id', async (req, res) => {
   try {
     const { judul, isi, pengirim, prioritas } = req.body;
@@ -133,7 +137,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE pengumuman
+// Hapus pengumuman
 router.delete('/:id', async (req, res) => {
   try {
     const result = await Pengumuman.delete(req.params.id);

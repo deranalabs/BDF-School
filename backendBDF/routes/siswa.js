@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Siswa = require('../models/Siswa');
+const authMiddleware = require('../middleware/auth');
 
-// GET all siswa
+// Lindungi semua rute siswa (wajib JWT)
+router.use(authMiddleware);
+
+// Ambil semua data siswa
 router.get('/', async (req, res) => {
   try {
     const siswa = await Siswa.getAll();
@@ -12,7 +16,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET siswa by ID
+// Ambil detail siswa berdasarkan ID
 router.get('/:id', async (req, res) => {
   try {
     const siswa = await Siswa.getById(req.params.id);
@@ -25,43 +29,49 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST new siswa
+// Buat data siswa baru
 router.post('/', async (req, res) => {
   try {
-    const { nama, nis, kelas, jurusan } = req.body;
+    const { nama, nis, kelas, jurusan, alamat, no_telp } = req.body;
     
-    if (!nama || !nis || !kelas || !jurusan) {
-      return res.status(400).json({ success: false, message: 'Nama, NIS, kelas, and jurusan are required' });
+    if (!nama || !nis || !kelas || !jurusan || !alamat || !no_telp) {
+      return res.status(400).json({ success: false, message: 'Nama, NIS, kelas, jurusan, alamat, dan no_telp wajib diisi' });
     }
 
-    const newSiswa = await Siswa.create({ nama, nis, kelas, jurusan });
+    const newSiswa = await Siswa.create({ nama, nis, kelas, jurusan, alamat, no_telp });
     res.status(201).json({ success: true, message: 'Siswa created successfully', data: newSiswa });
   } catch (error) {
+    if (error.code === 'SQLITE_CONSTRAINT') {
+      return res.status(409).json({ success: false, message: 'NIS sudah digunakan' });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// PUT update siswa
+// Perbarui data siswa
 router.put('/:id', async (req, res) => {
   try {
-    const { nama, nis, kelas, jurusan } = req.body;
+    const { nama, nis, kelas, jurusan, alamat, no_telp } = req.body;
     
-    if (!nama || !nis || !kelas || !jurusan) {
-      return res.status(400).json({ success: false, message: 'Nama, NIS, kelas, and jurusan are required' });
+    if (!nama || !nis || !kelas || !jurusan || !alamat || !no_telp) {
+      return res.status(400).json({ success: false, message: 'Nama, NIS, kelas, jurusan, alamat, dan no_telp wajib diisi' });
     }
 
-    const updatedSiswa = await Siswa.update(req.params.id, { nama, nis, kelas, jurusan });
+    const updatedSiswa = await Siswa.update(req.params.id, { nama, nis, kelas, jurusan, alamat, no_telp });
     if (!updatedSiswa) {
       return res.status(404).json({ success: false, message: 'Siswa not found' });
     }
     
     res.json({ success: true, message: 'Siswa updated successfully', data: updatedSiswa });
   } catch (error) {
+    if (error.code === 'SQLITE_CONSTRAINT') {
+      return res.status(409).json({ success: false, message: 'NIS sudah digunakan' });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// DELETE siswa
+// Hapus data siswa
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Siswa.delete(req.params.id);

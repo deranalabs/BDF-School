@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Presensi = require('../models/Presensi');
+const authMiddleware = require('../middleware/auth');
 
-// GET all presensi
+// Lindungi semua rute presensi (wajib JWT)
+router.use(authMiddleware);
+
+// Ambil semua data presensi (opsional filter tanggal)
 router.get('/', async (req, res) => {
   try {
     const { tanggal } = req.query;
@@ -19,7 +23,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET presensi by ID
+// Ambil detail presensi berdasarkan ID
 router.get('/:id', async (req, res) => {
   try {
     const presensi = await Presensi.getById(req.params.id);
@@ -41,7 +45,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// GET presensi by siswa
+// Ambil daftar presensi berdasarkan siswa
 router.get('/siswa/:siswa_id', async (req, res) => {
   try {
     const presensi = await Presensi.getBySiswa(req.params.siswa_id);
@@ -57,7 +61,7 @@ router.get('/siswa/:siswa_id', async (req, res) => {
   }
 });
 
-// POST create presensi
+// Buat presensi baru
 router.post('/', async (req, res) => {
   try {
     const { siswa_id, tanggal, status, keterangan } = req.body;
@@ -95,7 +99,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update presensi
+// Perbarui presensi
 router.put('/:id', async (req, res) => {
   try {
     const { siswa_id, tanggal, status, keterangan } = req.body;
@@ -133,7 +137,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE presensi
+// Hapus presensi
 router.delete('/:id', async (req, res) => {
   try {
     const result = await Presensi.delete(req.params.id);

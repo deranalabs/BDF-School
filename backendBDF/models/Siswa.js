@@ -2,11 +2,11 @@ const db = require('../config/database');
 
 class Siswa {
   static async create(data) {
-    const { nama, nis, kelas, jurusan } = data;
+    const { nama, nis, kelas, jurusan, alamat, no_telp } = data;
     return new Promise((resolve, reject) => {
       db.run(
-        'INSERT INTO siswa (nama, nis, kelas, jurusan) VALUES (?, ?, ?, ?)',
-        [nama, nis, kelas, jurusan],
+        'INSERT INTO siswa (nama, nis, kelas, jurusan, alamat, no_telp) VALUES (?, ?, ?, ?, ?, ?)',
+        [nama, nis, kelas, jurusan, alamat, no_telp],
         function(err) {
           if (err) reject(err);
           else resolve({ id: this.lastID, ...data });
@@ -17,7 +17,15 @@ class Siswa {
 
   static async getAll() {
     return new Promise((resolve, reject) => {
-      db.all('SELECT * FROM siswa ORDER BY nama', (err, rows) => {
+      const query = `
+        SELECT s.*,
+               COALESCE(COUNT(DISTINCT n.mata_pelajaran), 0) AS mapel_count
+        FROM siswa s
+        LEFT JOIN nilai n ON n.siswa_id = s.id
+        GROUP BY s.id
+        ORDER BY s.nama
+      `;
+      db.all(query, (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
@@ -34,11 +42,11 @@ class Siswa {
   }
 
   static async update(id, data) {
-    const { nama, nis, kelas, jurusan } = data;
+    const { nama, nis, kelas, jurusan, alamat, no_telp } = data;
     return new Promise((resolve, reject) => {
       db.run(
-        'UPDATE siswa SET nama = ?, nis = ?, kelas = ?, jurusan = ? WHERE id = ?',
-        [nama, nis, kelas, jurusan, id],
+        'UPDATE siswa SET nama = ?, nis = ?, kelas = ?, jurusan = ?, alamat = ?, no_telp = ? WHERE id = ?',
+        [nama, nis, kelas, jurusan, alamat, no_telp, id],
         function(err) {
           if (err) reject(err);
           else resolve({ id, ...data });

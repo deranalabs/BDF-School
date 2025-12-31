@@ -15,7 +15,7 @@ async function initDatabase() {
       
       console.log('Connected to SQLite database');
 
-      // Create users table
+      // Buat tabel users
       db.run(`
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +33,7 @@ async function initDatabase() {
         }
         console.log('Users table created or already exists');
 
-        // Create siswa table
+        // Buat tabel siswa
         db.run(`
           CREATE TABLE IF NOT EXISTS siswa (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +52,7 @@ async function initDatabase() {
           }
           console.log('Siswa table created or already exists');
 
-          // Create tugas table
+          // Buat tabel tugas
           db.run(`
             CREATE TABLE IF NOT EXISTS tugas (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,6 +61,7 @@ async function initDatabase() {
               deadline TEXT NOT NULL,
               kelas TEXT NOT NULL,
               guru TEXT NOT NULL,
+              status TEXT DEFAULT 'aktif',
               created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
               updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -72,7 +73,7 @@ async function initDatabase() {
             }
             console.log('Tugas table created or already exists');
 
-            // Create jadwal table
+            // Buat tabel jadwal
             db.run(`
               CREATE TABLE IF NOT EXISTS jadwal (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,7 +93,7 @@ async function initDatabase() {
               }
               console.log('Jadwal table created or already exists');
 
-              // Create presensi table
+              // Buat tabel presensi
               db.run(`
                 CREATE TABLE IF NOT EXISTS presensi (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,7 +113,7 @@ async function initDatabase() {
                 }
                 console.log('Presensi table created or already exists');
 
-                // Create nilai table
+                // Buat tabel nilai
                 db.run(`
                   CREATE TABLE IF NOT EXISTS nilai (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,7 +136,7 @@ async function initDatabase() {
                   }
                   console.log('Nilai table created or already exists');
 
-                  // Create pengumuman table
+                  // Buat tabel pengumuman
                   db.run(`
                     CREATE TABLE IF NOT EXISTS pengumuman (
                       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -155,7 +156,7 @@ async function initDatabase() {
                     }
                     console.log('Pengumuman table created or already exists');
 
-                    // Check if admin user exists
+                    // Periksa apakah user admin sudah ada
                     db.get(
                       'SELECT * FROM users WHERE username = ?',
                       ['admin'],
@@ -167,7 +168,7 @@ async function initDatabase() {
                         }
 
                         if (!row) {
-                          // Create admin user
+                          // Buat user admin
                           try {
                             const hashedPassword = await bcrypt.hash('admin123', 10);
                             db.run(

@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Jadwal = require('../models/Jadwal');
+const authMiddleware = require('../middleware/auth');
 
-// GET all jadwal
+// Lindungi semua rute jadwal (wajib JWT)
+router.use(authMiddleware);
+
+// Ambil semua data jadwal
 router.get('/', async (req, res) => {
   try {
     const jadwal = await Jadwal.getAll();
@@ -12,7 +16,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET jadwal by ID
+// Ambil detail jadwal berdasarkan ID
 router.get('/:id', async (req, res) => {
   try {
     const item = await Jadwal.getById(req.params.id);
@@ -25,7 +29,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST new jadwal
+// Buat jadwal baru
 router.post('/', async (req, res) => {
   try {
     const { mapel, kelas, guru, hari, jam_mulai, jam_selesai } = req.body;
@@ -42,7 +46,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update jadwal
+// Perbarui jadwal
 router.put('/:id', async (req, res) => {
   try {
     const { mapel, kelas, guru, hari, jam_mulai, jam_selesai } = req.body;
@@ -62,7 +66,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE jadwal
+// Hapus jadwal
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Jadwal.delete(req.params.id);

@@ -2,11 +2,11 @@ const db = require('../config/database');
 
 class Tugas {
   static async create(data) {
-    const { judul, deskripsi, deadline, kelas, guru } = data;
+    const { judul, deskripsi, deadline, kelas, guru, status = 'aktif' } = data;
     return new Promise((resolve, reject) => {
       db.run(
-        'INSERT INTO tugas (judul, deskripsi, deadline, kelas, guru) VALUES (?, ?, ?, ?, ?)',
-        [judul, deskripsi, deadline, kelas, guru],
+        'INSERT INTO tugas (judul, deskripsi, deadline, kelas, guru, status) VALUES (?, ?, ?, ?, ?, ?)',
+        [judul, deskripsi, deadline, kelas, guru, status],
         function(err) {
           if (err) reject(err);
           else resolve({ id: this.lastID, ...data });
@@ -34,11 +34,11 @@ class Tugas {
   }
 
   static async update(id, data) {
-    const { judul, deskripsi, deadline, kelas, guru } = data;
+    const { judul, deskripsi, deadline, kelas, guru, status } = data;
     return new Promise((resolve, reject) => {
       db.run(
-        'UPDATE tugas SET judul = ?, deskripsi = ?, deadline = ?, kelas = ?, guru = ? WHERE id = ?',
-        [judul, deskripsi, deadline, kelas, guru, id],
+        'UPDATE tugas SET judul = ?, deskripsi = ?, deadline = ?, kelas = ?, guru = ?, status = ? WHERE id = ?',
+        [judul, deskripsi, deadline, kelas, guru, status, id],
         function(err) {
           if (err) reject(err);
           else resolve({ id, ...data });
