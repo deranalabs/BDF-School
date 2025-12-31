@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -12,13 +13,13 @@ class AuthException implements Exception {
 }
 
 class AuthController extends ChangeNotifier {
+  AuthController() : _baseUrl = (dotenv.env['BASE_URL'] ?? 'http://localhost:3000').trim();
+
   final http.Client _client = http.Client();
   bool _isAuthenticated = false;
   String? _token;
   Map<String, dynamic>? _user;
-  
-  // Use your machine's IP address instead of localhost
-  static const String _baseUrl = 'http://192.168.110.83:3000';
+  final String _baseUrl;
   
   bool get isAuthenticated => _isAuthenticated;
   String? get token => _token;

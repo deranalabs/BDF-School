@@ -1,16 +1,22 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../theme/brand.dart';
 import '../dashboard/dashboard_page.dart';
 import '../dashboard/sidebar.dart';
 import '../jadwal/jadwal_page.dart';
 import '../nilai/nilai_page.dart';
 import '../pengumuman/pengumuman_page.dart';
 import '../presensi/presensi_page.dart';
-import '../profile/profile_page.dart';
 import '../siswa/daftar_siswa_page.dart';
 import '../tugas/tugas_page.dart';
 import '../auth/login_screen.dart';
+import '../profile/profile_page.dart';
 import '../../utils/feedback.dart';
+import '../../state/auth_controller.dart';
+import '../../utils/api_client.dart';
 
 class PengaturanPage extends StatefulWidget {
   const PengaturanPage({super.key});
@@ -25,10 +31,25 @@ class _PengaturanPageState extends State<PengaturanPage> {
   bool dailyDigest = false;
   bool darkMode = false;
   String language = 'id';
+  bool _loading = false;
+  ApiClient? _api;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final _currentPass = TextEditingController();
   final _newPass = TextEditingController();
   final _confirmPass = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthController>(context, listen: false);
+      setState(() {
+        _api = ApiClient(auth);
+      });
+      _loadProfilePrefs();
+    });
+  }
 
   @override
   void dispose() {
@@ -38,40 +59,151 @@ class _PengaturanPageState extends State<PengaturanPage> {
     super.dispose();
   }
 
+  Future<void> _loadProfilePrefs() async {
+    if (_api == null) return;
+    setState(() => _loading = true);
+    try {
+      final res = await _api!.get('/api/profile');
+      if (res.statusCode != 200) throw Exception('Gagal memuat pengaturan');
+      final data = jsonDecode(res.body)['data'] as Map<String, dynamic>;
+      setState(() {
+        emailNotif = (data['email_notif'] ?? 1) == 1;
+        pushNotif = (data['push_notif'] ?? 0) == 1;
+        dailyDigest = (data['daily_digest'] ?? 0) == 1;
+        darkMode = (data['dark_mode'] ?? 0) == 1;
+        language = (data['language'] ?? 'id').toString();
+      });
+    } catch (e) {
+      if (mounted) showFeedback(context, 'Gagal memuat pengaturan: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _savePrefs() async {
+    if (_api == null) return;
+    setState(() => _loading = true);
+    try {
+      final res = await _api!.put('/api/profile', body: {
+        'email_notif': emailNotif,
+        'push_notif': pushNotif,
+        'daily_digest': dailyDigest,
+        'dark_mode': darkMode,
+        'language': language,
+      });
+      if (res.statusCode != 200) {
+        final msg = jsonDecode(res.body)['message'] ?? 'Gagal menyimpan pengaturan';
+        throw Exception(msg);
+      }
+      showFeedback(context, 'Pengaturan tersimpan');
+    } catch (e) {
+      if (mounted) showFeedback(context, 'Gagal menyimpan: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _changePassword() async {
+    if (_api == null) return;
+    if (_currentPass.text.isEmpty ||
+        _newPass.text.isEmpty ||
+        _confirmPass.text.isEmpty) {
+      showFeedback(context, 'Lengkapi semua field password');
+      return;
+    }
+    if (_newPass.text.length < 6) {
+      showFeedback(context, 'Password baru minimal 6 karakter');
+      return;
+    }
+    if (_newPass.text != _confirmPass.text) {
+      showFeedback(context, 'Password baru dan konfirmasi tidak sama');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final res = await _api!.post('/api/auth/change-password', body: {
+        'currentPassword': _currentPass.text,
+        'newPassword': _newPass.text,
+      });
+      if (res.statusCode != 200) {
+        final msg = jsonDecode(res.body)['message'] ?? 'Gagal mengubah password';
+        throw Exception(msg);
+      }
+      showFeedback(context, 'Password berhasil diubah');
+      _currentPass.clear();
+      _newPass.clear();
+      _confirmPass.clear();
+    } catch (e) {
+      if (mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        showFeedback(context, 'Gagal mengubah password: $msg');
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      final authController = Provider.of<AuthController>(context, listen: false);
+      await authController.logout();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logout gagal: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scaffoldKey = GlobalKey<ScaffoldState>();
-    
     void goTo(Widget page) {
       Navigator.of(context).pop();
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => page));
     }
     
-    void logout() {
-      Navigator.of(context).pop();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
-
     return Scaffold(
-      key: scaffoldKey,
-      backgroundColor: const Color(0xFF0A1F44),
+      key: _scaffoldKey,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A1F44),
+        backgroundColor: BrandColors.navy900,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: const Text(
-          'Pengaturan',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+        title: const Text('Pengaturan', style: BrandTextStyles.appBarTitle),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              ),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.white.withOpacity(0.2),
+                child: const Text(
+                  'A',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
       drawer: Sidebar(
         selectedIndex: 8,
@@ -83,63 +215,29 @@ class _PengaturanPageState extends State<PengaturanPage> {
         onTapPengumuman: () => goTo(const PengumumanPage()),
         onTapSiswa: () => goTo(const DaftarSiswaPage()),
         onTapSettings: () => Navigator.of(context).pop(),
-        onLogout: logout,
+        onLogout: _logout,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Pengaturan',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Kelola pengaturan aplikasi sesuai preferensi Anda',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF5F7FA),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                ),
-                padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Column(
                   children: [
+                    const SizedBox(height: 24),
                     _SectionCard(
                       icon: Icons.security,
-                      iconColor: Colors.red,
+                      iconColor: BrandColors.error,
                       title: 'Keamanan',
                       subtitle: 'Pengaturan keamanan dan privasi akun',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Ubah Password',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0A1E4A),
-                            ),
+                            style: BrandTextStyles.subheading.copyWith(color: BrandColors.navy900),
                           ),
                           const SizedBox(height: 12),
                           _PasswordField(
@@ -161,32 +259,10 @@ class _PengaturanPageState extends State<PengaturanPage> {
                             width: double.infinity,
                             height: 48,
                             child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0A1E4A),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              onPressed: () {
-                                if (_currentPass.text.isEmpty ||
-                                    _newPass.text.isEmpty ||
-                                    _confirmPass.text.isEmpty) {
-                                  showFeedback(context, 'Lengkapi semua field password');
-                                  return;
-                                }
-                                if (_newPass.text != _confirmPass.text) {
-                                  showFeedback(context, 'Password baru dan konfirmasi tidak sama');
-                                  return;
-                                }
-                                showFeedback(context, 'Password berhasil diubah');
-                              },
+                              style: BrandButtons.primary(),
+                              onPressed: _loading ? null : _changePassword,
                               icon: const Icon(Icons.lock, color: Colors.white),
-                              label: const Text(
-                                'Ubah Password',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              label: const Text('Ubah Password'),
                             ),
                           ),
                         ],
@@ -195,7 +271,7 @@ class _PengaturanPageState extends State<PengaturanPage> {
                     const SizedBox(height: 16),
                     _SectionCard(
                       icon: Icons.notifications_active,
-                      iconColor: const Color(0xFFF5A524),
+                      iconColor: BrandColors.amber400,
                       title: 'Notifikasi',
                       subtitle: 'Atur preferensi notifikasi Anda',
                       child: Column(
@@ -220,13 +296,29 @@ class _PengaturanPageState extends State<PengaturanPage> {
                             value: dailyDigest,
                             onChanged: (v) => setState(() => dailyDigest = v),
                           ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 44,
+                            child: ElevatedButton(
+                              style: BrandButtons.primary(),
+                              onPressed: _loading ? null : _savePrefs,
+                              child: Text(
+                                _loading ? 'Menyimpan...' : 'Simpan Pengaturan',
+                                style: BrandTextStyles.body.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
                     _SectionCard(
                       icon: Icons.language,
-                      iconColor: const Color(0xFF9B51E0),
+                      iconColor: BrandColors.info,
                       title: 'Tampilan',
                       subtitle: 'Sesuaikan tampilan aplikasi',
                       child: Column(
@@ -238,44 +330,15 @@ class _PengaturanPageState extends State<PengaturanPage> {
                             value: darkMode,
                             onChanged: (v) => setState(() => darkMode = v),
                           ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Bahasa',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0A1E4A),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.black12),
-                            ),
-                            child: DropdownButtonFormField<String>(
-                              value: language,
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                              items: const [
-                                DropdownMenuItem(value: 'id', child: Text('Bahasa Indonesia')),
-                                DropdownMenuItem(value: 'en', child: Text('English')),
-                              ],
-                              onChanged: (v) => setState(() => language = v ?? 'id'),
-                            ),
-                          ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -304,13 +367,7 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: BrandShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,8 +378,8 @@ class _SectionCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  color: BrandColors.gray100,
+                  shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: iconColor, size: 24),
               ),
@@ -333,19 +390,12 @@ class _SectionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0A1E4A),
-                      ),
+                      style: BrandTextStyles.subheading.copyWith(color: BrandColors.navy900),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                      ),
+                      style: BrandTextStyles.caption.copyWith(color: BrandColors.gray700),
                     ),
                   ],
                 ),
@@ -377,18 +427,18 @@ class _PasswordField extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black12),
+          borderSide: const BorderSide(color: BrandColors.gray300),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black12),
+          borderSide: const BorderSide(color: BrandColors.gray300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF0A1E4A), width: 2),
+          borderSide: const BorderSide(color: BrandColors.navy900, width: 2),
         ),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: BrandColors.gray100,
       ),
     );
   }

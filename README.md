@@ -7,12 +7,32 @@ Aplikasi Flutter untuk manajemen sekolah (admin) dengan fitur jadwal, presensi, 
 - Provider (state auth)
 - Fluttertoast (hanya Android/iOS, desktop pakai SnackBar)
 
-## Menjalankan
+## Menjalankan (End-to-End)
+### 1) Backend (Node + SQLite)
+```bash
+cd backendBDF
+npm install
+npm run init-db   # buat/seed database & admin default (admin/admin123)
+npm start         # jalankan API di port 3000
+```
+- Env backend (`backendBDF/.env`):
+  - `PORT=3000`
+  - `JWT_SECRET=<isi_secret_kuat>`
+  - `DB_PATH=./database.sqlite`
+  - `ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000` (tambahkan origin lain jika perlu, pisah koma)
+
+### 2) Frontend (Flutter)
 ```bash
 flutter pub get
-flutter test
+flutter test       # optional
 flutter run -d <device_id>
 ```
+- Env frontend (`.env` di root proyek):
+  - `BASE_URL=http://127.0.0.1:3000` (ubah ke host/IP backend yang bisa diakses device)
+- Pastikan backend sudah jalan sebelum login di app.
+
+### Kredensial demo
+- admin / admin123
 
 ## Struktur utama
 - `lib/main.dart` — entry app.

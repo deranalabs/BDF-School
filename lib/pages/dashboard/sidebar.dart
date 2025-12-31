@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../state/auth_controller.dart';
+import '../../theme/brand.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({
@@ -39,26 +40,37 @@ class Sidebar extends StatelessWidget {
           // Header Section
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 44, 20, 24),
             decoration: const BoxDecoration(
               color: Color(0xFF0A1F44),
             ),
             child: Consumer<AuthController>(
                 builder: (context, auth, child) {
                   final username = auth.user?['username'] ?? 'Admin';
-                  final firstLetter = username.isNotEmpty ? username[0].toUpperCase() : 'A';
+                  final displayName = username.isNotEmpty
+                      ? '${username[0].toUpperCase()}${username.length > 1 ? username.substring(1) : ''}'
+                      : 'Admin';
+                  final firstLetter = displayName[0].toUpperCase();
                   
                   return Row(
                     children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: Colors.white.withOpacity(0.3),
-                        child: Text(
-                          firstLetter,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: BrandColors.amber400, width: 1),
+                        ),
+                        child: CircleAvatar(
+                          radius: 23,
+                          backgroundColor: Colors.white.withOpacity(0.18),
+                          child: Text(
+                            firstLetter,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -67,21 +79,40 @@ class Sidebar extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Admin Panel',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                            Text(
+                              displayName,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
                                 color: Colors.white,
+                                letterSpacing: 0.2,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Halo, $username',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Panel Sekolah',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
                                 color: Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: Colors.white.withOpacity(0.12)),
+                              ),
+                              child: const Text(
+                                'Admin',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.2,
+                                ),
                               ),
                             ),
                           ],
@@ -140,10 +171,15 @@ class Sidebar extends StatelessWidget {
                   selected: selectedIndex == 6,
                   onTap: onTapSiswa,
                 ),
+                const SizedBox(height: 4),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Divider(height: 1, color: Color(0xFFEAEAEA)),
+                ),
                 _SidebarItem(
                   icon: Icons.settings_outlined,
                   label: 'Pengaturan',
-                  selected: selectedIndex == 8,
+                  selected: selectedIndex == 7,
                   onTap: onTapSettings,
                 ),
               ],

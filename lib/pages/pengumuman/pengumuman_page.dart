@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../../theme/brand.dart';
 
 import '../dashboard/dashboard_page.dart';
 import '../dashboard/sidebar.dart';
@@ -9,10 +10,11 @@ import '../nilai/nilai_page.dart';
 import '../presensi/presensi_page.dart';
 import '../tugas/tugas_page.dart';
 import '../siswa/daftar_siswa_page.dart';
-import '../profile/profile_page.dart';
 import '../pengaturan/pengaturan_page.dart';
 import '../auth/login_screen.dart';
 import '../../utils/feedback.dart';
+import '../../utils/api_client.dart';
+import '../../state/auth_controller.dart';
 
 class PengumumanPage extends StatefulWidget {
   const PengumumanPage({super.key});
@@ -25,17 +27,20 @@ class _PengumumanPageState extends State<PengumumanPage> {
   final _titleController = TextEditingController();
   final _categoryController = TextEditingController();
   final _targetController = TextEditingController();
+  final _senderController = TextEditingController();
   final _dateController = TextEditingController();
   final _messageController = TextEditingController();
-  final _baseUrl = 'http://192.168.110.83:3000';
 
   List<_Announcement> _announcements = [];
   bool _isLoading = false;
   String? _error;
+  late ApiClient _api;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
+    _api = ApiClient(context.read<AuthController>());
     _fetchPengumuman();
   }
 
@@ -44,41 +49,73 @@ class _PengumumanPageState extends State<PengumumanPage> {
     _titleController.dispose();
     _categoryController.dispose();
     _targetController.dispose();
+    _senderController.dispose();
     _dateController.dispose();
     _messageController.dispose();
     super.dispose();
   }
 
+  static const _targetOptions = ['Semua Kelas', 'Kelas 10', 'Kelas 11', 'Kelas 12'];
+
+  String _normalizeTarget(String? raw) {
+    final value = (raw ?? '').trim().toLowerCase();
+    if (value == 'semua' || value.isEmpty) return 'Semua Kelas';
+    if (value == 'kelas 10') return 'Kelas 10';
+    if (value == 'kelas 11') return 'Kelas 11';
+    if (value == 'kelas 12') return 'Kelas 12';
+    return 'Semua Kelas';
+  }
+
+  String _serializeTarget(String? value) {
+    final normalized = _normalizeTarget(value);
+    return normalized == 'Semua Kelas' ? 'Semua' : normalized;
+  }
+
+  String? _dropdownSafeValue(String? value) {
+    final normalized = _normalizeTarget(value);
+    return _targetOptions.contains(normalized) ? normalized : null;
+  }
+
   Future<void> _fetchPengumuman() async {
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/api/pengumuman'));
+      final response = await _api.get('/api/pengumuman');
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
-          final announcements = (data['data'] as List)
-              .map((item) => _Announcement(
-                    title: item['judul'] ?? 'Unknown',
-                    category: item['prioritas'] ?? 'medium',
-                    target: 'Semua',
-                    date: item['tanggal'] ?? '2025-12-25',
-                    message: item['isi'] ?? '',
-                    isPinned: item['prioritas'] == 'high',
-                  ))
-              .toList();
+          final announcements = (data['data'] as List).map((item) {
+            late _Announcement ann;
+            ann = _Announcement(
+              id: item['id']?.toString() ?? '',
+              title: item['judul']?.toString() ?? 'Unknown',
+              category: item['prioritas']?.toString() ?? 'medium',
+              target: _normalizeTarget(item['target']?.toString()),
+              sender: item['pengirim']?.toString() ?? '',
+              date: item['tanggal']?.toString() ?? '',
+              message: item['isi']?.toString() ?? '',
+              isPinned: (item['prioritas']?.toString() ?? '').toLowerCase() == 'high',
+              onDelete: () => _deleteAnnouncement(ann),
+              onEdit: () => _openEditDialog(ann),
+            );
+            return ann;
+          }).toList();
           
           setState(() {
             _announcements = announcements;
             _isLoading = false;
           });
+        } else {
+          throw Exception(data['message'] ?? 'Failed to load pengumuman');
         }
       } else {
-        throw Exception('Failed to load pengumuman');
+        final body = jsonDecode(response.body);
+        throw Exception(body['message'] ?? 'Failed to load pengumuman');
       }
     } catch (e) {
       setState(() {
@@ -89,132 +126,296 @@ class _PengumumanPageState extends State<PengumumanPage> {
   }
 
   void _openCreateDialog() {
+    _titleController.clear();
+    _categoryController.clear();
+    _targetController.text = 'Semua Kelas';
+    _senderController.clear();
+    _dateController.clear();
+    _messageController.clear();
+    final baseDecoration = InputDecoration(
+      filled: true,
+      fillColor: BrandColors.gray100,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: BrandColors.gray300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: BrandColors.gray300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: BrandColors.navy900, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    );
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: const Color(0xFF0A1E4A),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Buat Pengumuman Baru',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.of(context).pop(),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _LabeledField(
-                    label: 'Judul Pengumuman',
-                    child: TextField(
-                      controller: _titleController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('Masukkan judul'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _LabeledField(
-                    label: 'Kategori',
-                    child: DropdownButtonFormField<String>(
-                      dropdownColor: const Color(0xFF1A3A6B),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('Pilih kategori'),
-                      items: const [
-                        DropdownMenuItem(value: 'Libur', child: Text('Libur')),
-                        DropdownMenuItem(value: 'Ujian', child: Text('Ujian')),
-                        DropdownMenuItem(value: 'Acara', child: Text('Acara')),
-                      ],
-                      onChanged: (v) => _categoryController.text = v ?? '',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _LabeledField(
-                    label: 'Target',
-                    child: DropdownButtonFormField<String>(
-                      dropdownColor: const Color(0xFF1A3A6B),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('Pilih target'),
-                      items: const [
-                        DropdownMenuItem(value: 'Semua Kelas', child: Text('Semua Kelas')),
-                        DropdownMenuItem(value: 'Kelas 10', child: Text('Kelas 10')),
-                        DropdownMenuItem(value: 'Kelas 11', child: Text('Kelas 11')),
-                        DropdownMenuItem(value: 'Kelas 12', child: Text('Kelas 12')),
-                      ],
-                      onChanged: (v) => _targetController.text = v ?? '',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _LabeledField(
-                    label: 'Tanggal',
-                    child: TextField(
-                      controller: _dateController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('dd/mm/yyyy').copyWith(
-                        suffixIcon: const Icon(Icons.calendar_today, size: 18, color: Colors.white54),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _LabeledField(
-                    label: 'Pesan',
-                    child: TextField(
-                      controller: _messageController,
-                      maxLines: 3,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('Masukkan isi pengumuman'),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE8D5B5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        if (_titleController.text.isEmpty ||
-                            _dateController.text.isEmpty ||
-                            _messageController.text.isEmpty ||
-                            _categoryController.text.isEmpty ||
-                            _targetController.text.isEmpty) {
-                          showFeedback(context, 'Lengkapi semua field');
-                          return;
-                        }
-                        Navigator.of(context).pop();
-                        showFeedback(context, 'Pengumuman berhasil dibuat');
-                      },
-                      child: const Text(
-                        'Buat Pengumuman',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF0A1E4A),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          title: Text(
+            'Buat Pengumuman Baru',
+            style: BrandTextStyles.subheading.copyWith(
+              color: BrandColors.navy900,
+              fontWeight: FontWeight.w700,
             ),
           ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _titleController,
+                  decoration: baseDecoration.copyWith(labelText: 'Judul Pengumuman'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _categoryController.text.isNotEmpty ? _categoryController.text : null,
+                  decoration: baseDecoration.copyWith(labelText: 'Prioritas (low/medium/high)'),
+                  items: const ['low', 'medium', 'high']
+                      .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                      .toList(),
+                  onChanged: (v) => _categoryController.text = v ?? '',
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _senderController,
+                  decoration: baseDecoration.copyWith(labelText: 'Pengirim'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _dropdownSafeValue(_targetController.text),
+                  decoration: baseDecoration.copyWith(labelText: 'Target'),
+                  items: _targetOptions
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (v) => _targetController.text = v ?? '',
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _dateController,
+                  decoration: baseDecoration.copyWith(
+                    labelText: 'Tanggal',
+                    hintText: 'dd/mm/yyyy',
+                    suffixIcon: const Icon(Icons.calendar_today, size: 18, color: BrandColors.gray500),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _messageController,
+                  maxLines: 3,
+                  decoration: baseDecoration.copyWith(labelText: 'Pesan'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal', style: TextStyle(color: BrandColors.gray700)),
+            ),
+            ElevatedButton(
+              style: BrandButtons.primary(),
+              onPressed: () async {
+                try {
+                  if (_titleController.text.trim().isEmpty ||
+                      _messageController.text.trim().isEmpty ||
+                      _senderController.text.trim().isEmpty ||
+                      _categoryController.text.trim().isEmpty) {
+                    showFeedback(context, 'Judul, isi, pengirim, dan prioritas wajib diisi');
+                    return;
+                  }
+
+                  final res = await _api.post(
+                    '/api/pengumuman',
+                    body: jsonEncode({
+                      'judul': _titleController.text,
+                      'prioritas': _categoryController.text,
+                      'pengirim': _senderController.text,
+                      'isi': _messageController.text,
+                      'target': _serializeTarget(_targetController.text),
+                      'tanggal': _dateController.text,
+                    }),
+                  );
+                  if (res.statusCode == 201) {
+                    Navigator.of(context).pop();
+                    await _fetchPengumuman();
+                    showFeedback(context, 'Pengumuman berhasil ditambahkan');
+                  } else {
+                    final body = jsonDecode(res.body);
+                    showFeedback(context, body['message'] ?? 'Gagal menambah pengumuman');
+                  }
+                } catch (e) {
+                  showFeedback(context, 'Error: $e');
+                }
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteAnnouncement(_Announcement ann) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Pengumuman'),
+        content: Text('Hapus pengumuman "${ann.title}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      final res = await _api.delete('/api/pengumuman/${ann.id}');
+      if (res.statusCode == 200) {
+        await _fetchPengumuman();
+        showFeedback(context, 'Pengumuman dihapus');
+      } else {
+        final body = jsonDecode(res.body);
+        showFeedback(context, body['message'] ?? 'Gagal menghapus pengumuman');
+      }
+    } catch (e) {
+      showFeedback(context, 'Error: $e');
+    }
+  }
+
+  void _openEditDialog(_Announcement ann) {
+    _titleController.text = ann.title;
+    _categoryController.text = ann.category;
+    _senderController.text = ann.sender;
+    _dateController.text = ann.date;
+    _messageController.text = ann.message;
+    _targetController.text = _normalizeTarget(ann.target);
+
+    final baseDecoration = InputDecoration(
+      filled: true,
+      fillColor: BrandColors.gray100,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: BrandColors.gray300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: BrandColors.gray300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: BrandColors.navy900, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          title: Text(
+            'Edit Pengumuman',
+            style: BrandTextStyles.subheading.copyWith(
+              color: BrandColors.navy900,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _titleController,
+                  decoration: baseDecoration.copyWith(labelText: 'Judul'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _categoryController.text.isNotEmpty ? _categoryController.text : null,
+                  decoration: baseDecoration.copyWith(labelText: 'Prioritas'),
+                  items: const ['low', 'medium', 'high']
+                      .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                      .toList(),
+                  onChanged: (v) => _categoryController.text = v ?? '',
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _senderController,
+                  decoration: baseDecoration.copyWith(labelText: 'Pengirim'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _dateController,
+                  decoration: baseDecoration.copyWith(labelText: 'Tanggal', hintText: 'dd/mm/yyyy'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _dropdownSafeValue(_targetController.text),
+                  decoration: baseDecoration.copyWith(labelText: 'Target'),
+                  items: _targetOptions
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (v) => _targetController.text = v ?? '',
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _messageController,
+                  maxLines: 4,
+                  decoration: baseDecoration.copyWith(labelText: 'Isi Pengumuman'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal', style: TextStyle(color: BrandColors.gray700)),
+            ),
+            ElevatedButton(
+              style: BrandButtons.primary(),
+              onPressed: () async {
+                try {
+                  if (_titleController.text.trim().isEmpty ||
+                      _messageController.text.trim().isEmpty ||
+                      _senderController.text.trim().isEmpty ||
+                      _categoryController.text.trim().isEmpty) {
+                    showFeedback(context, 'Judul, isi, pengirim, dan prioritas wajib diisi');
+                    return;
+                  }
+
+                  final res = await _api.put(
+                    '/api/pengumuman/${ann.id}',
+                    body: jsonEncode({
+                      'judul': _titleController.text,
+                      'prioritas': _categoryController.text,
+                      'pengirim': _senderController.text,
+                      'isi': _messageController.text,
+                      'target': _serializeTarget(_targetController.text),
+                      'tanggal': _dateController.text,
+                    }),
+                  );
+                  if (res.statusCode == 200) {
+                    Navigator.of(context).pop();
+                    await _fetchPengumuman();
+                    showFeedback(context, 'Pengumuman diperbarui');
+                  } else {
+                    final body = jsonDecode(res.body);
+                    showFeedback(context, body['message'] ?? 'Gagal memperbarui pengumuman');
+                  }
+                } catch (e) {
+                  showFeedback(context, 'Error: $e');
+                }
+              },
+              child: const Text('Simpan Perubahan'),
+            ),
+          ],
         );
       },
     );
@@ -222,45 +423,53 @@ class _PengumumanPageState extends State<PengumumanPage> {
 
   @override
   Widget build(BuildContext context) {
-    final scaffoldKey = GlobalKey<ScaffoldState>();
-    
     void goTo(Widget page) {
       Navigator.of(context).pop();
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => page));
     }
-    
-    void logout() {
-      Navigator.of(context).pop();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+
+    void logout() async {
+      try {
+        final authController = Provider.of<AuthController>(context, listen: false);
+        await authController.logout();
+        if (!mounted) return;
+        _scaffoldKey.currentState?.closeDrawer();
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout gagal: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
 
     return Scaffold(
-      key: scaffoldKey,
-      backgroundColor: const Color(0xFFF5F7FA),
+      key: _scaffoldKey,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A1F44),
+        backgroundColor: BrandColors.navy900,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text(
           'Pengumuman',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: BrandTextStyles.appBarTitle,
         ),
       ),
       drawer: Sidebar(
         selectedIndex: 5,
         onTapDashboard: () => goTo(const DashboardScreen()),
-        onTapTugas: () => goTo(TugasPage()),
-        onTapJadwal: () => goTo(JadwalPage()),
-        onTapPresensi: () => goTo(PresensiPage()),
+        onTapTugas: () => goTo(const TugasPage()),
+        onTapJadwal: () => goTo(const JadwalPage()),
+        onTapPresensi: () => goTo(const PresensiPage()),
         onTapNilai: () => goTo(NilaiPage()),
         onTapPengumuman: () => Navigator.of(context).pop(),
         onTapSiswa: () => goTo(const DaftarSiswaPage()),
@@ -268,78 +477,65 @@ class _PengumumanPageState extends State<PengumumanPage> {
         onLogout: logout,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header section dengan latar gelap
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0A1F44),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
+        child: RefreshIndicator(
+          color: BrandColors.navy900,
+          backgroundColor: Colors.white,
+          onRefresh: _fetchPengumuman,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                  decoration: const BoxDecoration(
+                    color: BrandColors.navy900,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Manajemen Pengumuman',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pengumuman Sekolah',
+                        style: BrandTextStyles.heading.copyWith(color: Colors.white),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Kelola dan publikasikan pengumuman untuk siswa',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
+                      const SizedBox(height: 8),
+                      Text(
+                        'Kelola dan bagikan informasi penting untuk siswa.',
+                        style: BrandTextStyles.bodySecondary.copyWith(color: Colors.white70),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFDB45B),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          elevation: 0,
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        style: BrandButtons.accent().copyWith(
+                          shape: MaterialStatePropertyAll(
+                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          padding: const MaterialStatePropertyAll(EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
                         ),
                         onPressed: _openCreateDialog,
-                        icon: const Icon(Icons.add, color: Color(0xFF0A1F44)),
-                        label: const Text(
-                          'Buat Pengumuman',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0A1F44),
-                          ),
-                        ),
+                        icon: const Icon(Icons.add, color: BrandColors.navy900),
+                        label: const Text('Buat Pengumuman'),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              // Konten daftar pengumuman di panel terang
-              Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF5F7FA),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
+                    ],
                   ),
                 ),
-                padding: const EdgeInsets.all(20),
-                child: _buildContent(),
-              ),
-            ],
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  child: _buildContent(),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -350,37 +546,32 @@ class _PengumumanPageState extends State<PengumumanPage> {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFDB45B)),
+          valueColor: AlwaysStoppedAnimation<Color>(BrandColors.amber400),
         ),
       );
     }
 
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _error!,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _fetchPengumuman,
-              child: const Text('Coba Lagi'),
-            ),
-          ],
-        ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            size: 64,
+            color: BrandColors.error,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _error!,
+            style: BrandTextStyles.body.copyWith(color: BrandColors.gray700),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            style: BrandButtons.primary(),
+            onPressed: _fetchPengumuman,
+            child: const Text('Coba Lagi'),
+          ),
+        ],
       );
     }
 
@@ -392,15 +583,12 @@ class _PengumumanPageState extends State<PengumumanPage> {
             Icon(
               Icons.campaign_outlined,
               size: 64,
-              color: Colors.grey[400],
+              color: BrandColors.gray300,
             ),
             const SizedBox(height: 16),
             Text(
               'Belum ada pengumuman',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: BrandTextStyles.bodySecondary.copyWith(color: BrandColors.gray700),
             ),
           ],
         ),
@@ -408,40 +596,30 @@ class _PengumumanPageState extends State<PengumumanPage> {
     }
 
     return Column(
-      children: _announcements.map((item) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: _AnnouncementCard(data: item),
-      )).toList(),
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white54),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.white24),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.white24),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE8D5B5), width: 2),
-      ),
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.1),
+      children: _announcements
+          .map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _AnnouncementCard(
+                  announcement: item,
+                  onDelete: item.onDelete,
+                  onEdit: item.onEdit,
+                ),
+              ))
+          .toList(),
     );
   }
 }
 
 class _AnnouncementCard extends StatelessWidget {
-  const _AnnouncementCard({required this.data});
+  const _AnnouncementCard({
+    required this.announcement,
+    required this.onDelete,
+    required this.onEdit,
+  });
 
-  final _Announcement data;
+  final _Announcement announcement;
+  final void Function() onDelete;
+  final void Function() onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -450,13 +628,7 @@ class _AnnouncementCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: BrandShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,53 +637,40 @@ class _AnnouncementCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  data.title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0A1E4A),
-                  ),
+                  announcement.title,
+                  style: BrandTextStyles.subheading.copyWith(color: BrandColors.navy900),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 20),
-                onPressed: () {},
+                icon: const Icon(Icons.edit_outlined, size: 20, color: BrandColors.gray500),
+                onPressed: onEdit,
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                onPressed: () {},
+                icon: const Icon(Icons.delete_outline, color: BrandColors.error),
+                onPressed: onDelete,
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            data.message,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
+            announcement.message,
+            style: BrandTextStyles.bodySecondary.copyWith(color: BrandColors.gray700),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 16, color: Colors.black54),
+              const Icon(Icons.calendar_today, size: 16, color: BrandColors.gray500),
               const SizedBox(width: 6),
               Text(
-                data.date,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Colors.black54,
-                ),
+                announcement.date,
+                style: BrandTextStyles.caption.copyWith(color: BrandColors.gray700),
               ),
               const SizedBox(width: 16),
-              const Icon(Icons.groups, size: 16, color: Colors.black54),
+              const Icon(Icons.groups, size: 16, color: BrandColors.gray500),
               const SizedBox(width: 6),
               Text(
-                data.target,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Colors.black54,
-                ),
+                announcement.target,
+                style: BrandTextStyles.caption.copyWith(color: BrandColors.gray700),
               ),
             ],
           ),
@@ -522,45 +681,27 @@ class _AnnouncementCard extends StatelessWidget {
 }
 
 class _Announcement {
+  final String id;
   final String title;
   final String message;
   final String date;
   final String target;
+  final String sender;
   final String category;
   final bool isPinned;
+  final void Function() onDelete;
+  final void Function() onEdit;
 
   const _Announcement({
+    required this.id,
     required this.title,
     required this.message,
     required this.date,
     required this.target,
-    this.category = 'medium',
-    this.isPinned = false,
+    required this.sender,
+    required this.category,
+    required this.isPinned,
+    required this.onDelete,
+    required this.onEdit,
   });
-}
-
-class _LabeledField extends StatelessWidget {
-  const _LabeledField({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 8),
-        child,
-      ],
-    );
-  }
 }
