@@ -23,6 +23,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
   .filter(Boolean);
 
 // Middleware utama
+app.set('trust proxy', 1);
 app.use(helmet());
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
