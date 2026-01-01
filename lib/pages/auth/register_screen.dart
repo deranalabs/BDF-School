@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../state/auth_controller.dart';
 import '../../utils/api_client.dart';
-import '../../utils/feedback.dart';
 import '../../theme/brand.dart';
 import 'login_screen.dart';
 
@@ -64,11 +63,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final topSpacing = view.size.height > 720 ? 32.0 : 20.0;
 
     Future<void> register() async {
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+      void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
       if (_loading) return;
       final valid = _formKey.currentState?.validate() ?? false;
       if (!valid) return;
       if (_password.text != _confirm.text) {
-        showFeedback(context, 'Password dan konfirmasi tidak sama');
+        show('Password dan konfirmasi tidak sama');
         return;
       }
       setState(() => _loading = true);
@@ -82,13 +84,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (res.statusCode != 201) {
           throw Exception('Registrasi gagal: ${res.body}');
         }
-        showFeedback(context, 'Registrasi berhasil, silakan login');
-        if (!mounted) return;
-        Navigator.of(context).pushReplacement(
+        show('Registrasi berhasil, silakan login');
+        navigator.pushReplacement(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
         );
       } catch (e) {
-        if (mounted) showFeedback(context, 'Gagal registrasi: $e');
+        show('Gagal registrasi: $e');
       } finally {
         if (mounted) setState(() => _loading = false);
       }
@@ -357,9 +358,9 @@ class _RegisterButton extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         style: BrandButtons.primary().copyWith(
-          minimumSize: MaterialStateProperty.all(const Size.fromHeight(54)),
-          elevation: MaterialStateProperty.resolveWith(
-            (states) => states.contains(MaterialState.disabled) ? 0 : 4,
+          minimumSize: const WidgetStatePropertyAll(Size.fromHeight(54)),
+          elevation: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.disabled) ? 0 : 4,
           ),
         ),
         onPressed: onPressed,

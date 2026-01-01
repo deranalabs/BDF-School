@@ -8,7 +8,6 @@ import '../pengumuman/pengumuman_page.dart';
 import '../dashboard/sidebar.dart';
 import '../presensi/presensi_page.dart';
 import '../tugas/tugas_page.dart';
-import '../profile/profile_page.dart';
 import '../pengaturan/pengaturan_page.dart';
 import '../jadwal/jadwal_page.dart';
 import '../nilai/nilai_page.dart';
@@ -81,7 +80,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                     noTelp: student['no_telp'] ?? '',
                   ))
               .toList();
-          
+          if (!mounted) return;
           setState(() {
             _students = students;
             _isLoading = false;
@@ -94,6 +93,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
         throw Exception(body['message'] ?? 'Failed to load students');
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Gagal memuat siswa: $e';
         _isLoading = false;
@@ -102,6 +102,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
   }
 
   void _openAddStudentDialog() {
+    final rootContext = context;
     final nameController = TextEditingController();
     final nisController = TextEditingController();
     final alamatController = TextEditingController();
@@ -130,8 +131,8 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
     );
 
     showDialog(
-      context: context,
-      builder: (context) {
+      context: rootContext,
+      builder: (dialogCtx) {
         return AlertDialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -159,7 +160,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                     Expanded(
                       child: TextField(
                         controller: nisController,
-                        decoration: baseDecoration.copyWith(labelText: 'NIS'),
+                        decoration: baseDecoration.copyWith(labelText: 'NIS', hintText: 'contoh: 231011'),
                       ),
                     ),
                   ],
@@ -172,7 +173,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: noTelpController,
-                  decoration: baseDecoration.copyWith(labelText: 'No. Telepon'),
+                  decoration: baseDecoration.copyWith(labelText: 'No. Telepon', hintText: 'contoh: 08123456789'),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
@@ -197,50 +198,76 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal', style: TextStyle(color: BrandColors.gray700)),
-            ),
-            ElevatedButton.icon(
-              style: BrandButtons.primary(),
-              onPressed: () async {
-                if (nameController.text.isEmpty ||
-                    nisController.text.isEmpty ||
-                    alamatController.text.isEmpty ||
-                    noTelpController.text.isEmpty ||
-                    kelas == null ||
-                    jurusan == null) {
-                  showFeedback(context, 'Harap lengkapi data (nama, NIS, alamat, no. telepon, kelas, jurusan)');
-                  return;
-                }
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: BrandColors.navy900,
+                      side: const BorderSide(color: BrandColors.navy900, width: 1.4),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: BrandButtons.primary().copyWith(
+                      padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
+                      shape: WidgetStatePropertyAll(
+                        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final ctx = rootContext;
+                      if (nameController.text.isEmpty ||
+                          nisController.text.isEmpty ||
+                          alamatController.text.isEmpty ||
+                          noTelpController.text.isEmpty ||
+                          kelas == null ||
+                          jurusan == null) {
+                        showFeedback(ctx, 'Harap lengkapi data (nama, NIS, alamat, no. telepon, kelas, jurusan)');
+                        return;
+                      }
 
-                try {
-                  final res = await _api.post(
-                    '/api/siswa',
-                    body: jsonEncode({
-                      'nama': nameController.text,
-                      'nis': nisController.text,
-                      'kelas': kelas,
-                      'jurusan': jurusan,
-                      'alamat': alamatController.text,
-                      'no_telp': noTelpController.text,
-                    }),
-                  );
+                      final navigator = Navigator.of(dialogCtx);
+                      final messenger = ScaffoldMessenger.of(ctx);
+                      void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                      try {
+                        final res = await _api.post(
+                          '/api/siswa',
+                          body: {
+                            'nama': nameController.text,
+                            'nis': nisController.text,
+                            'kelas': kelas,
+                            'jurusan': jurusan,
+                            'alamat': alamatController.text,
+                            'no_telp': noTelpController.text,
+                          },
+                        );
 
-                  if (res.statusCode == 201) {
-                    Navigator.of(context).pop();
-                    await _fetchStudents();
-                    showFeedback(context, 'Siswa berhasil ditambahkan');
-                  } else {
-                    final body = jsonDecode(res.body);
-                    showFeedback(context, body['message']?.toString() ?? 'Gagal menambah siswa');
-                  }
-                } catch (e) {
-                  showFeedback(context, 'Error: $e');
-                }
-              },
-              icon: const Icon(Icons.save),
-              label: const Text('Simpan Data'),
+                        if (res.statusCode == 201) {
+                          navigator.pop();
+                          await _fetchStudents();
+                          show('Siswa berhasil ditambahkan');
+                        } else if (res.statusCode == 409) {
+                          show('NIS sudah digunakan');
+                        } else {
+                          final body = jsonDecode(res.body);
+                          show(body['message']?.toString() ?? 'Gagal menambah siswa');
+                        }
+                      } catch (e) {
+                        show('Error: $e');
+                      }
+                    },
+                    icon: const Icon(Icons.save),
+                    label: const Text('Simpan Data'),
+                  ),
+                ),
+              ],
             ),
           ],
         );
@@ -260,18 +287,18 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
     }
     
     void logout() async {
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        if (!mounted) return;
         _scaffoldKey.currentState?.closeDrawer();
-        Navigator.of(context).pushAndRemoveUntil(
+        navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Logout gagal: $e'),
             backgroundColor: Colors.red,
@@ -282,26 +309,24 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white,
+      backgroundColor: BrandColors.gray100,
       appBar: AppBar(
         backgroundColor: BrandColors.navy900,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: const Text(
-          'Daftar Siswa',
-          style: BrandTextStyles.appBarTitle,
-        ),
+        title: const Text('Daftar Siswa', style: BrandTextStyles.appBarTitle),
       ),
       drawer: Sidebar(
-        selectedIndex: 6,
+        selectedIndex: 1,
         onTapDashboard: () => goTo(const DashboardScreen()),
         onTapTugas: () => goTo(const TugasPage()),
         onTapJadwal: () => goTo(const JadwalPage()),
         onTapPresensi: () => goTo(const PresensiPage()),
-        onTapNilai: () => goTo(NilaiPage()),
+        onTapNilai: () => goTo(const NilaiPage()),
         onTapPengumuman: () => goTo(const PengumumanPage()),
         onTapSiswa: () => Navigator.of(context).pop(),
         onTapSettings: () => goTo(const PengaturanPage()),
@@ -345,8 +370,8 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                         height: 48,
                         child: ElevatedButton.icon(
                           style: BrandButtons.accent().copyWith(
-                            padding: const MaterialStatePropertyAll(EdgeInsets.symmetric(horizontal: 20)),
-                            shape: MaterialStatePropertyAll(
+                            padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 20)),
+                            shape: WidgetStatePropertyAll(
                               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
@@ -362,7 +387,8 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                             child: _StatCard(
                               value: totalStudents.toString(),
                               label: 'Total',
-                              color: BrandColors.gray700,
+                              color: BrandColors.navy700,
+                              icon: Icons.people_alt,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -371,6 +397,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                               value: activeStudents.toString(),
                               label: 'Aktif',
                               color: BrandColors.success,
+                              icon: Icons.check_circle,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -379,6 +406,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                               value: kelasCount.toString(),
                               label: 'Kelas',
                               color: BrandColors.amber400,
+                              icon: Icons.class_,
                             ),
                           ),
                         ],
@@ -405,7 +433,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _selectedClass,
+                        initialValue: _selectedClass,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: BrandColors.gray100,
@@ -632,7 +660,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: kelas,
+                initialValue: kelas,
                 decoration: baseDecoration.copyWith(labelText: 'Kelas'),
                 items: const ['Kelas 10', 'Kelas 11', 'Kelas 12']
                     .map((k) => DropdownMenuItem(value: k, child: Text(k)))
@@ -641,7 +669,7 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: jurusanItems.contains(jurusan) ? jurusan : null,
+                initialValue: jurusanItems.contains(jurusan) ? jurusan : null,
                 decoration: baseDecoration.copyWith(labelText: 'Jurusan'),
                 items: jurusanItems
                     .map((j) => DropdownMenuItem(value: j, child: Text(j)))
@@ -659,29 +687,34 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
           ElevatedButton(
             style: BrandButtons.primary(),
             onPressed: () async {
+              final navigator = Navigator.of(ctx);
+              final messenger = ScaffoldMessenger.of(context);
+              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
               try {
                 final response = await _api.put(
                   '/api/siswa/${student.id}',
-                  body: jsonEncode({
+                  body: {
                     'nama': nameController.text,
                     'nis': nisController.text,
                     'kelas': kelas,
                     'jurusan': jurusan,
                     'alamat': alamatController.text,
                     'no_telp': noTelpController.text,
-                  }),
+                  },
                 );
 
                 if (response.statusCode == 200) {
-                  Navigator.of(ctx).pop();
-                  _fetchStudents();
-                  showFeedback(context, 'Data siswa berhasil diperbarui');
+                  navigator.pop();
+                  await _fetchStudents();
+                  show('Data siswa berhasil diperbarui');
+                } else if (response.statusCode == 409) {
+                  show('NIS sudah digunakan');
                 } else {
                   final body = jsonDecode(response.body);
-                  showFeedback(context, body['message'] ?? 'Gagal memperbarui siswa');
+                  show(body['message'] ?? 'Gagal memperbarui siswa');
                 }
               } catch (e) {
-                showFeedback(context, 'Error: $e');
+                show('Error: $e');
               }
             },
             child: const Text('Simpan'),
@@ -706,22 +739,25 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
           ElevatedButton(
             style: BrandButtons.destructive(),
             onPressed: () async {
+              final navigator = Navigator.of(ctx);
+              final messenger = ScaffoldMessenger.of(ctx);
+              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
               try {
                 final response = await _api.delete('/api/siswa/${student.id}');
 
                 if (response.statusCode == 200) {
-                  Navigator.of(ctx).pop();
-                  _fetchStudents();
-                  showFeedback(context, 'Siswa berhasil dihapus');
+                  navigator.pop();
+                  await _fetchStudents();
+                  show('Siswa berhasil dihapus');
                 } else {
                   final body = jsonDecode(response.body);
                   final msg = body['message']?.toString().toLowerCase().contains('constraint') == true
                       ? 'Tidak bisa menghapus: data siswa masih terpakai (presensi/nilai).'
                       : body['message'] ?? 'Gagal menghapus siswa';
-                  showFeedback(context, msg);
+                  show(msg);
                 }
               } catch (e) {
-                showFeedback(context, 'Error: $e');
+                show('Error: $e');
               }
             },
             child: const Text('Hapus', style: TextStyle(color: Colors.white)),
@@ -738,16 +774,18 @@ class _StatCard extends StatelessWidget {
     required this.value,
     required this.label,
     required this.color,
+    required this.icon,
   });
 
   final String value;
   final String label;
   final Color color;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(16),
@@ -755,14 +793,23 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.white, size: 18),
+          ),
+          const SizedBox(height: 8),
           Text(
             value,
-            style: BrandTextStyles.heading.copyWith(color: Colors.white, fontSize: 28),
+            style: BrandTextStyles.heading.copyWith(color: Colors.white, fontSize: 22),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: BrandTextStyles.body.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+            style: BrandTextStyles.body.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
           ),
         ],
       ),

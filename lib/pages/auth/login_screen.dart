@@ -316,9 +316,9 @@ class _LoginButton extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         style: BrandButtons.primary().copyWith(
-          minimumSize: MaterialStateProperty.all(const Size.fromHeight(54)),
-          elevation: MaterialStateProperty.resolveWith(
-            (states) => states.contains(MaterialState.disabled) ? 0 : 4,
+          minimumSize: const WidgetStatePropertyAll(Size.fromHeight(54)),
+          elevation: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.disabled) ? 0 : 4,
           ),
         ),
         onPressed: isLoading ? null : onLogin,

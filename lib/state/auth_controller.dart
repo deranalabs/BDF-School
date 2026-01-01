@@ -13,7 +13,8 @@ class AuthException implements Exception {
 }
 
 class AuthController extends ChangeNotifier {
-  AuthController() : _baseUrl = (dotenv.env['BASE_URL'] ?? 'http://localhost:3000').trim();
+  AuthController({String? baseUrl})
+      : _baseUrl = (baseUrl ?? dotenv.env['BASE_URL'] ?? 'http://localhost:3000').trim();
 
   final http.Client _client = http.Client();
   bool _isAuthenticated = false;
@@ -24,21 +25,30 @@ class AuthController extends ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   String? get token => _token;
   Map<String, dynamic>? get user => _user;
+  String? get avatar => _user?['avatar'] as String?;
+
+  void updateUserProfile(Map<String, dynamic> profile) {
+    _user = {...?_user, ...profile};
+    notifyListeners();
+  }
+
+  void setAvatar(String? avatarValue) {
+    if (_user == null) return;
+    _user = {
+      ..._user!,
+      'avatar': avatarValue ?? '',
+    };
+    notifyListeners();
+  }
   
   Future<void> login(String username, String password) async {
     try {
-      print('Attempting login to: $_baseUrl/api/auth/login');
-      print('Username: $username');
-      
       final response = await _client.post(
         Uri.parse('$_baseUrl/api/auth/login'),
         body: jsonEncode({'username': username, 'password': password}),
         headers: {'Content-Type': 'application/json'},
       );
-      
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
@@ -47,6 +57,8 @@ class AuthController extends ChangeNotifier {
           _token = data['token'];
           _user = data['user'];
           _isAuthenticated = true;
+          // setelah login, ambil profil lengkap (termasuk avatar) agar dashboard/sidebar langsung sinkron
+          await _fetchAndCacheProfile();
           notifyListeners();
         } else {
           throw AuthException(data['message'] ?? 'Login gagal');
@@ -56,7 +68,6 @@ class AuthController extends ChangeNotifier {
         throw AuthException(errorData['message'] ?? 'Login gagal');
       }
     } catch (e) {
-      print('Login error: $e');
       if (e is AuthException) {
         rethrow;
       }
@@ -96,6 +107,8 @@ class AuthController extends ChangeNotifier {
           _token = token;
           _user = data['decoded'];
           _isAuthenticated = true;
+          // sinkronkan profil dari API agar avatar langsung ada
+          await _fetchAndCacheProfile();
           notifyListeners();
           return true;
         }
@@ -117,6 +130,30 @@ class AuthController extends ChangeNotifier {
       _isAuthenticated = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<void> _fetchAndCacheProfile() async {
+    if (_token == null) return;
+    try {
+      final res = await _client.get(
+        Uri.parse('$_baseUrl/api/profile'),
+        headers: {'Authorization': 'Bearer $_token'},
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['success'] == true && data['data'] is Map<String, dynamic>) {
+          final profile = Map<String, dynamic>.from(data['data'] as Map);
+          final avatarVal = profile['avatar'];
+          if (avatarVal is String && avatarVal.isNotEmpty && !avatarVal.startsWith('http')) {
+            profile['avatar'] = 'lib/assets/images/avatar/$avatarVal';
+          }
+          _user = {...?_user, ...profile};
+          notifyListeners();
+        }
+      }
+    } catch (_) {
+      // abaikan, tidak blokir login
     }
   }
 }

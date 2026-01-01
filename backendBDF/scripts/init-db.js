@@ -4,6 +4,32 @@ const bcrypt = require('bcryptjs');
 
 const dbPath = path.join(__dirname, '..', 'database.sqlite');
 
+function ensureAvatarColumn(db) {
+  return new Promise((resolve, reject) => {
+    db.all('PRAGMA table_info(users)', (err, rows) => {
+      if (err) {
+        console.error('Error reading users schema:', err.message);
+        reject(err);
+        return;
+      }
+      const hasAvatar = rows.some((r) => r.name === 'avatar');
+      if (hasAvatar) {
+        resolve();
+        return;
+      }
+      db.run('ALTER TABLE users ADD COLUMN avatar TEXT', (alterErr) => {
+        if (alterErr) {
+          console.error('Error adding avatar column:', alterErr.message);
+          reject(alterErr);
+        } else {
+          console.log('Added avatar column to users table');
+          resolve();
+        }
+      });
+    });
+  });
+}
+
 async function initDatabase() {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbPath, (err) => {
@@ -33,6 +59,8 @@ async function initDatabase() {
         }
         console.log('Users table created or already exists');
 
+        ensureAvatarColumn(db)
+          .then(() => {
         // Buat tabel siswa
         db.run(`
           CREATE TABLE IF NOT EXISTS siswa (
@@ -202,6 +230,11 @@ async function initDatabase() {
             });
           });
         });
+          })
+          .catch((err) => {
+            console.error('Initialization halted:', err.message);
+            reject(err);
+          });
       });
     });
   });

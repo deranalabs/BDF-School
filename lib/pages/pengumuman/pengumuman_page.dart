@@ -12,7 +12,6 @@ import '../tugas/tugas_page.dart';
 import '../siswa/daftar_siswa_page.dart';
 import '../pengaturan/pengaturan_page.dart';
 import '../auth/login_screen.dart';
-import '../../utils/feedback.dart';
 import '../../utils/api_client.dart';
 import '../../state/auth_controller.dart';
 
@@ -53,6 +52,26 @@ class _PengumumanPageState extends State<PengumumanPage> {
     _dateController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDate(TextEditingController controller) async {
+    final now = DateTime.now();
+    DateTime? initial;
+    final current = controller.text.trim();
+    if (current.isNotEmpty) {
+      try {
+        initial = DateTime.parse(current);
+      } catch (_) {}
+    }
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial ?? now,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked != null) {
+      controller.text = picked.toIso8601String().substring(0, 10);
+    }
   }
 
   static const _targetOptions = ['Semua Kelas', 'Kelas 10', 'Kelas 11', 'Kelas 12'];
@@ -134,7 +153,10 @@ class _PengumumanPageState extends State<PengumumanPage> {
     _messageController.clear();
     final baseDecoration = InputDecoration(
       filled: true,
-      fillColor: BrandColors.gray100,
+      fillColor: Colors.white,
+      labelStyle: const TextStyle(color: BrandColors.gray700, fontWeight: FontWeight.w600),
+      hintStyle: const TextStyle(color: BrandColors.gray500),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: BrandColors.gray300),
@@ -147,33 +169,44 @@ class _PengumumanPageState extends State<PengumumanPage> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: BrandColors.navy900, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        return Dialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          title: Text(
-            'Buat Pengumuman Baru',
-            style: BrandTextStyles.subheading.copyWith(
-              color: BrandColors.navy900,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: SingleChildScrollView(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Buat Pengumuman Baru',
+                        style: BrandTextStyles.subheading.copyWith(
+                          color: BrandColors.navy900,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _titleController,
                   decoration: baseDecoration.copyWith(labelText: 'Judul Pengumuman'),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _categoryController.text.isNotEmpty ? _categoryController.text : null,
+                  initialValue: _categoryController.text.isNotEmpty ? _categoryController.text : null,
                   decoration: baseDecoration.copyWith(labelText: 'Prioritas (low/medium/high)'),
                   items: const ['low', 'medium', 'high']
                       .map((p) => DropdownMenuItem(value: p, child: Text(p)))
@@ -187,7 +220,7 @@ class _PengumumanPageState extends State<PengumumanPage> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _dropdownSafeValue(_targetController.text),
+                  initialValue: _dropdownSafeValue(_targetController.text),
                   decoration: baseDecoration.copyWith(labelText: 'Target'),
                   items: _targetOptions
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
@@ -197,9 +230,11 @@ class _PengumumanPageState extends State<PengumumanPage> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _dateController,
+                  readOnly: true,
+                  onTap: () => _selectDate(_dateController),
                   decoration: baseDecoration.copyWith(
                     labelText: 'Tanggal',
-                    hintText: 'dd/mm/yyyy',
+                    hintText: 'YYYY-MM-DD',
                     suffixIcon: const Icon(Icons.calendar_today, size: 18, color: BrandColors.gray500),
                   ),
                 ),
@@ -209,58 +244,88 @@ class _PengumumanPageState extends State<PengumumanPage> {
                   maxLines: 3,
                   decoration: baseDecoration.copyWith(labelText: 'Pesan'),
                 ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: BrandColors.navy900,
+                          side: const BorderSide(color: BrandColors.navy900, width: 1.4),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: BrandButtons.primary().copyWith(
+                          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
+                          shape: WidgetStatePropertyAll(
+                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final navigator = Navigator.of(context);
+                          final messenger = ScaffoldMessenger.of(context);
+                          void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                          try {
+                            if (_titleController.text.trim().isEmpty ||
+                                _messageController.text.trim().isEmpty ||
+                                _senderController.text.trim().isEmpty ||
+                                _categoryController.text.trim().isEmpty) {
+                              show('Judul, isi, pengirim, dan prioritas wajib diisi');
+                              return;
+                            }
+
+                            final res = await _api.post(
+                              '/api/pengumuman',
+                              body: jsonEncode({
+                                'judul': _titleController.text,
+                                'prioritas': _categoryController.text,
+                                'pengirim': _senderController.text,
+                                'isi': _messageController.text,
+                                'target': _serializeTarget(_targetController.text),
+                                'tanggal': _dateController.text,
+                              }),
+                            );
+                            if (res.statusCode == 201) {
+                              navigator.pop();
+                              await _fetchPengumuman();
+                              show('Pengumuman berhasil ditambahkan');
+                            } else {
+                              final body = jsonDecode(res.body);
+                              show(body['message'] ?? 'Gagal menambah pengumuman');
+                            }
+                          } catch (e) {
+                            show('Error: $e');
+                          }
+                        },
+                        child: const Text(
+                          'Simpan',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal', style: TextStyle(color: BrandColors.gray700)),
-            ),
-            ElevatedButton(
-              style: BrandButtons.primary(),
-              onPressed: () async {
-                try {
-                  if (_titleController.text.trim().isEmpty ||
-                      _messageController.text.trim().isEmpty ||
-                      _senderController.text.trim().isEmpty ||
-                      _categoryController.text.trim().isEmpty) {
-                    showFeedback(context, 'Judul, isi, pengirim, dan prioritas wajib diisi');
-                    return;
-                  }
-
-                  final res = await _api.post(
-                    '/api/pengumuman',
-                    body: jsonEncode({
-                      'judul': _titleController.text,
-                      'prioritas': _categoryController.text,
-                      'pengirim': _senderController.text,
-                      'isi': _messageController.text,
-                      'target': _serializeTarget(_targetController.text),
-                      'tanggal': _dateController.text,
-                    }),
-                  );
-                  if (res.statusCode == 201) {
-                    Navigator.of(context).pop();
-                    await _fetchPengumuman();
-                    showFeedback(context, 'Pengumuman berhasil ditambahkan');
-                  } else {
-                    final body = jsonDecode(res.body);
-                    showFeedback(context, body['message'] ?? 'Gagal menambah pengumuman');
-                  }
-                } catch (e) {
-                  showFeedback(context, 'Error: $e');
-                }
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
         );
       },
     );
   }
 
   Future<void> _deleteAnnouncement(_Announcement ann) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -278,13 +343,13 @@ class _PengumumanPageState extends State<PengumumanPage> {
       final res = await _api.delete('/api/pengumuman/${ann.id}');
       if (res.statusCode == 200) {
         await _fetchPengumuman();
-        showFeedback(context, 'Pengumuman dihapus');
+        messenger.showSnackBar(const SnackBar(content: Text('Pengumuman dihapus')));
       } else {
         final body = jsonDecode(res.body);
-        showFeedback(context, body['message'] ?? 'Gagal menghapus pengumuman');
+        messenger.showSnackBar(SnackBar(content: Text(body['message'] ?? 'Gagal menghapus pengumuman')));
       }
     } catch (e) {
-      showFeedback(context, 'Error: $e');
+      messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -298,7 +363,10 @@ class _PengumumanPageState extends State<PengumumanPage> {
 
     final baseDecoration = InputDecoration(
       filled: true,
-      fillColor: BrandColors.gray100,
+      fillColor: Colors.white,
+      labelStyle: const TextStyle(color: BrandColors.gray700, fontWeight: FontWeight.w600),
+      hintStyle: const TextStyle(color: BrandColors.gray500),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: BrandColors.gray300),
@@ -311,34 +379,45 @@ class _PengumumanPageState extends State<PengumumanPage> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: BrandColors.navy900, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        return Dialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          title: Text(
-            'Edit Pengumuman',
-            style: BrandTextStyles.subheading.copyWith(
-              color: BrandColors.navy900,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: SingleChildScrollView(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Edit Pengumuman',
+                        style: BrandTextStyles.subheading.copyWith(
+                          color: BrandColors.navy900,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _titleController,
                   decoration: baseDecoration.copyWith(labelText: 'Judul'),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _categoryController.text.isNotEmpty ? _categoryController.text : null,
+                  initialValue: _categoryController.text.isNotEmpty ? _categoryController.text : null,
                   decoration: baseDecoration.copyWith(labelText: 'Prioritas'),
                   items: const ['low', 'medium', 'high']
                       .map((p) => DropdownMenuItem(value: p, child: Text(p)))
@@ -353,11 +432,17 @@ class _PengumumanPageState extends State<PengumumanPage> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _dateController,
-                  decoration: baseDecoration.copyWith(labelText: 'Tanggal', hintText: 'dd/mm/yyyy'),
+                  readOnly: true,
+                  onTap: () => _selectDate(_dateController),
+                  decoration: baseDecoration.copyWith(
+                    labelText: 'Tanggal',
+                    hintText: 'YYYY-MM-DD',
+                    suffixIcon: const Icon(Icons.calendar_today, size: 18, color: BrandColors.gray500),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _dropdownSafeValue(_targetController.text),
+                  initialValue: _dropdownSafeValue(_targetController.text),
                   decoration: baseDecoration.copyWith(labelText: 'Target'),
                   items: _targetOptions
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
@@ -370,52 +455,81 @@ class _PengumumanPageState extends State<PengumumanPage> {
                   maxLines: 4,
                   decoration: baseDecoration.copyWith(labelText: 'Isi Pengumuman'),
                 ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: BrandColors.navy900,
+                          side: const BorderSide(color: BrandColors.navy900, width: 1.4),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: BrandButtons.primary().copyWith(
+                          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
+                          shape: WidgetStatePropertyAll(
+                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final navigator = Navigator.of(context);
+                          final messenger = ScaffoldMessenger.of(context);
+                          void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                          try {
+                            if (_titleController.text.trim().isEmpty ||
+                                _messageController.text.trim().isEmpty ||
+                                _senderController.text.trim().isEmpty ||
+                                _categoryController.text.trim().isEmpty) {
+                              show('Judul, isi, pengirim, dan prioritas wajib diisi');
+                              return;
+                            }
+
+                            final res = await _api.put(
+                              '/api/pengumuman/${ann.id}',
+                              body: jsonEncode({
+                                'judul': _titleController.text,
+                                'prioritas': _categoryController.text,
+                                'pengirim': _senderController.text,
+                                'isi': _messageController.text,
+                                'target': _serializeTarget(_targetController.text),
+                                'tanggal': _dateController.text,
+                              }),
+                            );
+                            if (res.statusCode == 200) {
+                              navigator.pop();
+                              await _fetchPengumuman();
+                              show('Pengumuman diperbarui');
+                            } else {
+                              final body = jsonDecode(res.body);
+                              show(body['message'] ?? 'Gagal memperbarui pengumuman');
+                            }
+                          } catch (e) {
+                            show('Error: $e');
+                          }
+                        },
+                        child: const Text(
+                          'Simpan Perubahan',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal', style: TextStyle(color: BrandColors.gray700)),
-            ),
-            ElevatedButton(
-              style: BrandButtons.primary(),
-              onPressed: () async {
-                try {
-                  if (_titleController.text.trim().isEmpty ||
-                      _messageController.text.trim().isEmpty ||
-                      _senderController.text.trim().isEmpty ||
-                      _categoryController.text.trim().isEmpty) {
-                    showFeedback(context, 'Judul, isi, pengirim, dan prioritas wajib diisi');
-                    return;
-                  }
-
-                  final res = await _api.put(
-                    '/api/pengumuman/${ann.id}',
-                    body: jsonEncode({
-                      'judul': _titleController.text,
-                      'prioritas': _categoryController.text,
-                      'pengirim': _senderController.text,
-                      'isi': _messageController.text,
-                      'target': _serializeTarget(_targetController.text),
-                      'tanggal': _dateController.text,
-                    }),
-                  );
-                  if (res.statusCode == 200) {
-                    Navigator.of(context).pop();
-                    await _fetchPengumuman();
-                    showFeedback(context, 'Pengumuman diperbarui');
-                  } else {
-                    final body = jsonDecode(res.body);
-                    showFeedback(context, body['message'] ?? 'Gagal memperbarui pengumuman');
-                  }
-                } catch (e) {
-                  showFeedback(context, 'Error: $e');
-                }
-              },
-              child: const Text('Simpan Perubahan'),
-            ),
-          ],
         );
       },
     );
@@ -429,22 +543,19 @@ class _PengumumanPageState extends State<PengumumanPage> {
     }
 
     void logout() async {
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        if (!mounted) return;
         _scaffoldKey.currentState?.closeDrawer();
-        Navigator.of(context).pushAndRemoveUntil(
+        navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Logout gagal: $e'),
-            backgroundColor: Colors.red,
-          ),
+        messenger.showSnackBar(
+          SnackBar(content: Text('Logout gagal: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -455,22 +566,20 @@ class _PengumumanPageState extends State<PengumumanPage> {
       appBar: AppBar(
         backgroundColor: BrandColors.navy900,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: const Text(
-          'Pengumuman',
-          style: BrandTextStyles.appBarTitle,
-        ),
+        title: const Text('Pengumuman', style: BrandTextStyles.appBarTitle),
       ),
       drawer: Sidebar(
-        selectedIndex: 5,
+        selectedIndex: 6,
         onTapDashboard: () => goTo(const DashboardScreen()),
         onTapTugas: () => goTo(const TugasPage()),
         onTapJadwal: () => goTo(const JadwalPage()),
         onTapPresensi: () => goTo(const PresensiPage()),
-        onTapNilai: () => goTo(NilaiPage()),
+        onTapNilai: () => goTo(const NilaiPage()),
         onTapPengumuman: () => Navigator.of(context).pop(),
         onTapSiswa: () => goTo(const DaftarSiswaPage()),
         onTapSettings: () => goTo(const PengaturanPage()),
@@ -511,10 +620,12 @@ class _PengumumanPageState extends State<PengumumanPage> {
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         style: BrandButtons.accent().copyWith(
-                          shape: MaterialStatePropertyAll(
+                          shape: WidgetStatePropertyAll(
                             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          padding: const MaterialStatePropertyAll(EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                          padding: const WidgetStatePropertyAll(
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
                         ),
                         onPressed: _openCreateDialog,
                         icon: const Icon(Icons.add, color: BrandColors.navy900),

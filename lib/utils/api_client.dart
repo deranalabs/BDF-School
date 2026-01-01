@@ -6,9 +6,9 @@ import 'package:http/http.dart' as http;
 import '../state/auth_controller.dart';
 
 class ApiClient {
-  ApiClient(this.auth, {http.Client? client})
+  ApiClient(this.auth, {http.Client? client, String? baseUrl})
       : _client = client ?? http.Client(),
-        baseUrl = (dotenv.env['BASE_URL'] ?? 'http://localhost:3000').trim();
+        baseUrl = (baseUrl ?? dotenv.env['BASE_URL'] ?? 'http://localhost:3000').trim();
 
   final AuthController auth;
   final http.Client _client;

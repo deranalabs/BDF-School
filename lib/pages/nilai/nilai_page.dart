@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:provider/provider.dart';
 
+import '../../utils/api_client.dart';
+import '../../state/auth_controller.dart';
+import '../../theme/brand.dart';
 import '../dashboard/dashboard_page.dart';
 import '../dashboard/sidebar.dart';
 import '../tugas/tugas_page.dart';
@@ -14,9 +17,6 @@ import '../siswa/daftar_siswa_page.dart';
 import '../pengaturan/pengaturan_page.dart';
 import '../auth/login_screen.dart';
 import 'nilai_detail.dart';
-import '../../utils/api_client.dart';
-import '../../state/auth_controller.dart';
-import '../../theme/brand.dart';
 
 class NilaiPage extends StatefulWidget {
   const NilaiPage({super.key});
@@ -96,18 +96,18 @@ class _NilaiPageState extends State<NilaiPage> {
     }
 
     void logout() async {
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        if (!mounted) return;
         _scaffoldKey.currentState?.closeDrawer();
-        Navigator.of(context).pushAndRemoveUntil(
+        navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Logout gagal: $e'),
             backgroundColor: Colors.red,
@@ -216,10 +216,9 @@ class _NilaiPageState extends State<NilaiPage> {
                         icon: const Icon(Icons.keyboard_arrow_down),
                         items: const [
                           DropdownMenuItem(value: 'Semua Kelas', child: Text('Semua Kelas')),
-                          DropdownMenuItem(value: 'Kelas 1', child: Text('Kelas 1')),
-                          DropdownMenuItem(value: 'Kelas 2', child: Text('Kelas 2')),
-                          DropdownMenuItem(value: 'Kelas 3', child: Text('Kelas 3')),
-                          DropdownMenuItem(value: 'Kelas 4', child: Text('Kelas 4')),
+                          DropdownMenuItem(value: '10', child: Text('Kelas 10')),
+                          DropdownMenuItem(value: '11', child: Text('Kelas 11')),
+                          DropdownMenuItem(value: '12', child: Text('Kelas 12')),
                         ],
                         onChanged: (v) {
                           setState(() => _selectedKelas = v!);
@@ -296,6 +295,8 @@ class _NilaiPageState extends State<NilaiPage> {
     final uasCtrl = TextEditingController();
     String selectedSemester = 'Ganjil';
     String selectedTahun = '2024/2025';
+    String selectedMapel = 'Matematika';
+    bool isCustomMapel = false;
     _StudentRecord? selectedSiswa;
 
     InputDecoration brandedInput(String label) => InputDecoration(
@@ -347,23 +348,72 @@ class _NilaiPageState extends State<NilaiPage> {
                     DropdownButtonFormField<_StudentRecord>(
                       value: selectedSiswa,
                       decoration: brandedInput('Pilih Siswa'),
+                      isExpanded: true,
                       items: _students
                           .map(
                             (s) => DropdownMenuItem(
-                              value: s,
-                              child: Text('${s.name} • ${s.kelas}'),
-                            ),
+                                  value: s,
+                                  child: Text(
+                                    '${s.name} • ${s.nis} • Kelas ${s.kelas}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                          )
+                          .toList(),
+                      selectedItemBuilder: (_) => _students
+                          .map(
+                            (s) => Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    '${s.name} • ${s.nis} • Kelas ${s.kelas}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                           )
                           .toList(),
                       onChanged: (v) => setStateDialog(() => selectedSiswa = v),
                       validator: (v) => v == null ? 'Pilih siswa' : null,
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: mapelCtrl,
+                    DropdownButtonFormField<String>(
+                      value: selectedMapel,
                       decoration: brandedInput('Mata Pelajaran'),
-                      validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                      isExpanded: true,
+                      items: const [
+                        DropdownMenuItem(value: 'Matematika', child: Text('Matematika')),
+                        DropdownMenuItem(value: 'Bahasa Indonesia', child: Text('Bahasa Indonesia')),
+                        DropdownMenuItem(value: 'Bahasa Inggris', child: Text('Bahasa Inggris')),
+                        DropdownMenuItem(value: 'IPA', child: Text('IPA')),
+                        DropdownMenuItem(value: 'IPS', child: Text('IPS')),
+                        DropdownMenuItem(value: 'PPKn', child: Text('PPKn')),
+                        DropdownMenuItem(value: 'Seni Budaya', child: Text('Seni Budaya')),
+                        DropdownMenuItem(value: 'PJOK', child: Text('PJOK')),
+                        DropdownMenuItem(value: 'Informatika', child: Text('Informatika')),
+                        DropdownMenuItem(value: 'Prakarya', child: Text('Prakarya')),
+                        DropdownMenuItem(value: 'Lainnya', child: Text('Lainnya (ketik manual)')),
+                      ],
+                      onChanged: (v) {
+                        setStateDialog(() {
+                          selectedMapel = v ?? 'Matematika';
+                          isCustomMapel = selectedMapel == 'Lainnya';
+                          if (!isCustomMapel) {
+                            mapelCtrl.text = selectedMapel;
+                          } else {
+                            mapelCtrl.clear();
+                          }
+                        });
+                      },
                     ),
+                    if (isCustomMapel) ...[
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: mapelCtrl,
+                        decoration: brandedInput('Mata Pelajaran (Lainnya)'),
+                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -426,12 +476,18 @@ class _NilaiPageState extends State<NilaiPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton(
-                            style: BrandButtons.primary().copyWith(
-                              backgroundColor: MaterialStateProperty.all(BrandColors.gray500),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: BrandColors.navy900,
+                              side: const BorderSide(color: BrandColors.navy900),
+                              minimumSize: const Size(double.infinity, 48),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Batal'),
+                            child: const Text(
+                              'Batal',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -440,10 +496,14 @@ class _NilaiPageState extends State<NilaiPage> {
                             style: BrandButtons.primary(),
                             onPressed: () async {
                               if (formKey.currentState!.validate()) {
+                                final navigator = Navigator.of(context);
+                                final messenger = ScaffoldMessenger.of(context);
+                                void show(String msg, {Color? color}) =>
+                                    messenger.showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
                                 try {
                                   final response = await _api.post(
                                     '/api/nilai',
-                                    body: jsonEncode({
+                                    body: {
                                       'siswa_id': selectedSiswa?.id,
                                       'mata_pelajaran': mapelCtrl.text.trim(),
                                       'tugas': int.tryParse(tugasCtrl.text) ?? 0,
@@ -451,29 +511,19 @@ class _NilaiPageState extends State<NilaiPage> {
                                       'uas': int.tryParse(uasCtrl.text) ?? 0,
                                       'semester': selectedSemester,
                                       'tahun_ajaran': selectedTahun,
-                                    }),
+                                    },
                                   );
 
                                   if (response.statusCode == 201) {
-                                    Navigator.of(context).pop();
+                                    navigator.pop();
                                     await _fetchStudents();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Nilai berhasil ditambahkan'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
+                                    show('Nilai berhasil ditambahkan');
                                   } else {
                                     final body = jsonDecode(response.body);
                                     throw Exception(body['message'] ?? 'Gagal menambah nilai');
                                   }
                                 } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: ${e.toString()}'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+                                  show('Error: $e');
                                 }
                               }
                             },
@@ -529,39 +579,82 @@ class _NilaiPageState extends State<NilaiPage> {
       );
     }
     final students = _filteredStudents;
-    if (_students.isEmpty) {
-      return const Center(
-        child: Text('Belum ada data siswa'),
-      );
-    }
-    if (students.isEmpty) {
-      return const Center(child: Text('Tidak ada hasil untuk filter/pencarian'));
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: students.length,
-      itemBuilder: (context, index) {
-        final student = students[index];
-        return _StudentCard(
-          student: student,
-          onTap: () {
-            Navigator.push<bool>(
-              context,
-              MaterialPageRoute(
-                builder: (_) => NilaiDetailPage(
-                  studentId: student.id,
-                  studentName: student.name,
-                  kelas: student.kelas,
-                ),
-              ),
-            ).then((changed) {
-              if (changed == true) {
-                _fetchStudents();
-              }
-            });
-          },
-        );
-      },
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      children: [
+        if (_students.isEmpty) ...[
+          const SizedBox(height: 32),
+          Icon(Icons.school_outlined, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 12),
+          const Center(
+            child: Text(
+              'Belum ada data siswa',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF4A5568)),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              'Tambahkan siswa dulu di halaman Siswa',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+          ),
+        ] else if (students.isEmpty) ...[
+          const SizedBox(height: 32),
+          Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 12),
+          const Center(
+            child: Text(
+              'Tidak ada hasil untuk filter/pencarian',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF4A5568)),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              'Coba reset filter atau cari dengan kata kunci lain',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.center,
+            child: ElevatedButton(
+              style: BrandButtons.primary(),
+              onPressed: () {
+                setState(() {
+                  _selectedKelas = 'Semua Kelas';
+                  _searchController.clear();
+                });
+              },
+              child: const Text('Reset filter'),
+            ),
+          ),
+        ] else ...[
+          ...List.generate(students.length, (index) {
+            final student = students[index];
+            return _StudentCard(
+              student: student,
+              onTap: () {
+                Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NilaiDetailPage(
+                      studentId: student.id,
+                      studentName: student.name,
+                      kelas: student.kelas,
+                    ),
+                  ),
+                ).then((changed) {
+                  if (changed == true) {
+                    _fetchStudents();
+                  }
+                });
+              },
+            );
+          }),
+        ],
+      ],
     );
   }
 }
@@ -658,6 +751,7 @@ class _StudentCard extends StatelessWidget {
 class _StudentRecord {
   final String? id;
   final String name;
+  final String nis;
   final String kelas;
   final int mapelCount;
   final String avatar;
@@ -666,6 +760,7 @@ class _StudentRecord {
   const _StudentRecord({
     this.id,
     required this.name,
+    required this.nis,
     required this.kelas,
     required this.mapelCount,
     required this.avatar,
@@ -685,6 +780,7 @@ class _StudentRecord {
     return _StudentRecord(
       id: json['id']?.toString(),
       name: name,
+      nis: (json['nis'] ?? '').toString(),
       kelas: json['kelas'] as String? ?? '',
       mapelCount: json['mapel_count'] as int? ?? 3,
       avatar: firstChar,

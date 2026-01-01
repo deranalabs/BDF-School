@@ -46,11 +46,12 @@ class Sidebar extends StatelessWidget {
             ),
             child: Consumer<AuthController>(
                 builder: (context, auth, child) {
-                  final username = auth.user?['username'] ?? 'Admin';
+                  final username = (auth.user?['username'] ?? 'Admin').toString();
                   final displayName = username.isNotEmpty
                       ? '${username[0].toUpperCase()}${username.length > 1 ? username.substring(1) : ''}'
                       : 'Admin';
                   final firstLetter = displayName[0].toUpperCase();
+                  final avatar = auth.avatar;
                   
                   return Row(
                     children: [
@@ -64,13 +65,21 @@ class Sidebar extends StatelessWidget {
                         child: CircleAvatar(
                           radius: 23,
                           backgroundColor: Colors.white.withOpacity(0.18),
-                          child: Text(
-                            firstLetter,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: ClipOval(
+                            child: avatar != null && avatar.isNotEmpty
+                                ? (avatar.startsWith('http')
+                                    ? Image.network(avatar, fit: BoxFit.cover)
+                                    : Image.asset(avatar, fit: BoxFit.cover))
+                                : Center(
+                                    child: Text(
+                                      firstLetter,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
@@ -136,10 +145,10 @@ class Sidebar extends StatelessWidget {
                   onTap: onTapDashboard,
                 ),
                 _SidebarItem(
-                  icon: Icons.calendar_today_outlined,
-                  label: 'Jadwal',
+                  icon: Icons.groups_outlined,
+                  label: 'Daftar Siswa',
                   selected: selectedIndex == 1,
-                  onTap: onTapJadwal,
+                  onTap: onTapSiswa,
                 ),
                 _SidebarItem(
                   icon: Icons.person_pin_outlined,
@@ -154,22 +163,22 @@ class Sidebar extends StatelessWidget {
                   onTap: onTapNilai,
                 ),
                 _SidebarItem(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Jadwal',
+                  selected: selectedIndex == 4,
+                  onTap: onTapJadwal,
+                ),
+                _SidebarItem(
                   icon: Icons.menu_book_outlined,
                   label: 'Tugas',
-                  selected: selectedIndex == 4,
+                  selected: selectedIndex == 5,
                   onTap: onTapTugas,
                 ),
                 _SidebarItem(
                   icon: Icons.notifications_none_outlined,
                   label: 'Pengumuman',
-                  selected: selectedIndex == 5,
-                  onTap: onTapPengumuman,
-                ),
-                _SidebarItem(
-                  icon: Icons.groups_outlined,
-                  label: 'Daftar Siswa',
                   selected: selectedIndex == 6,
-                  onTap: onTapSiswa,
+                  onTap: onTapPengumuman,
                 ),
                 const SizedBox(height: 4),
                 const Padding(

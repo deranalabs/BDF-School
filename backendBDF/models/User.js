@@ -43,8 +43,8 @@ class User {
             username, password, role,
             full_name, email, phone, address,
             language, dark_mode, email_notif, push_notif, daily_digest,
-            employee_id, join_date, status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            employee_id, join_date, status, avatar
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             userData.username,
             hashedPassword,
@@ -60,7 +60,8 @@ class User {
             userData.daily_digest !== undefined ? (userData.daily_digest ? 1 : 0) : 0,
             userData.employee_id || '',
             userData.join_date || '',
-            userData.status || 'Aktif'
+            userData.status || 'Aktif',
+            userData.avatar || ''
           ],
           function(err) {
             if (err) {
@@ -109,7 +110,8 @@ class User {
       'daily_digest',
       'employee_id',
       'join_date',
-      'status'
+      'status',
+      'avatar'
     ];
 
     const updates = [];

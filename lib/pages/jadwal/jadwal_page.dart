@@ -174,11 +174,14 @@ class _JadwalPageState extends State<JadwalPage> {
       final res = await _api.delete('/api/jadwal/${item.id}');
       if (res.statusCode == 200) {
         await _fetchSchedule();
+        if (!mounted) return;
         showFeedback(context, 'Jadwal dihapus');
       } else {
+        if (!mounted) return;
         showFeedback(context, 'Gagal hapus jadwal');
       }
     } catch (e) {
+      if (!mounted) return;
       showFeedback(context, 'Gagal hapus: $e');
     }
   }
@@ -196,12 +199,23 @@ class _JadwalPageState extends State<JadwalPage> {
       barrierDismissible: true,
       builder: (ctx) {
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: StatefulBuilder(
             builder: (context, setState) {
-              final mapelOptions = const ['Matematika', 'Bahasa Indonesia', 'Bahasa Inggris'];
-              final kelasOptions = const ['Kelas 1', 'Kelas 2', 'Kelas 3'];
+              final mapelOptions = const [
+                'Matematika',
+                'Bahasa Indonesia',
+                'Bahasa Inggris',
+                'IPA',
+                'IPS',
+                'PPKn',
+                'Seni Budaya',
+                'PJOK',
+                'Informatika',
+                'Prakarya',
+              ];
+              final kelasOptions = const ['Kelas 10', 'Kelas 11', 'Kelas 12'];
               final hariOptions = _days;
 
               return SingleChildScrollView(
@@ -212,13 +226,12 @@ class _JadwalPageState extends State<JadwalPage> {
                   children: [
                     Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Tambah Jadwal Baru',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0A1F44),
+                            'Ubah Jadwal',
+                            style: BrandTextStyles.subheading.copyWith(
+                              color: BrandColors.navy900,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -293,60 +306,78 @@ class _JadwalPageState extends State<JadwalPage> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0A1F44),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: BrandColors.navy900,
+                              side: const BorderSide(color: BrandColors.navy900, width: 1.4),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
                           ),
                         ),
-                        onPressed: () async {
-                          if (subject == null ||
-                              kelas == null ||
-                              hari == null ||
-                              teacherController.text.isEmpty ||
-                              startController.text.isEmpty ||
-                              endController.text.isEmpty) {
-                            showFeedback(context, 'Lengkapi semua field');
-                            return;
-                          }
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: BrandButtons.primary().copyWith(
+                              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
+                              shape: WidgetStatePropertyAll(
+                                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                            onPressed: () async {
+                              final navigator = Navigator.of(context);
+                              final messenger = ScaffoldMessenger.of(context);
+                              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                              if (subject == null ||
+                                  kelas == null ||
+                                  hari == null ||
+                                  teacherController.text.isEmpty ||
+                                  startController.text.isEmpty ||
+                                  endController.text.isEmpty) {
+                                show('Lengkapi semua field');
+                                return;
+                              }
 
-                          try {
-                            final res = await _api.put(
-                              '/api/jadwal/${item.id}',
-                              body: {
-                                'mapel': subject,
-                                'kelas': kelas,
-                                'guru': teacherController.text,
-                                'hari': hari,
-                                'jam_mulai': startController.text,
-                                'jam_selesai': endController.text,
-                              },
-                            );
+                              try {
+                                final res = await _api.put(
+                                  '/api/jadwal/${item.id}',
+                                  body: {
+                                    'mapel': subject,
+                                    'kelas': kelas,
+                                    'guru': teacherController.text,
+                                    'hari': hari,
+                                    'jam_mulai': startController.text,
+                                    'jam_selesai': endController.text,
+                                  },
+                                );
 
-                            if (res.statusCode == 200) {
-                              Navigator.of(context).pop();
-                              await _fetchSchedule();
-                              showFeedback(context, 'Jadwal berhasil diperbarui');
-                            } else {
-                              showFeedback(context, 'Gagal memperbarui jadwal');
-                            }
-                          } catch (e) {
-                            showFeedback(context, 'Error: $e');
-                          }
-                        },
-                        child: const Text(
-                          'Simpan Perubahan',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                                if (res.statusCode == 200) {
+                                  navigator.pop();
+                                  await _fetchSchedule();
+                                  show('Jadwal berhasil diperbarui');
+                                } else {
+                                  show('Gagal memperbarui jadwal');
+                                }
+                              } catch (e) {
+                                show('Error: $e');
+                              }
+                            },
+                            child: const Text(
+                              'Simpan Perubahan',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -498,18 +529,18 @@ class _JadwalPageState extends State<JadwalPage> {
     }
 
     void logout() async {
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        if (!mounted) return;
         _scaffoldKey.currentState?.closeDrawer();
-        Navigator.of(context).pushAndRemoveUntil(
+        navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Logout gagal: $e'),
             backgroundColor: Colors.red,
@@ -532,7 +563,7 @@ class _JadwalPageState extends State<JadwalPage> {
         title: const Text('Jadwal', style: BrandTextStyles.appBarTitle),
       ),
       drawer: Sidebar(
-        selectedIndex: 1,
+        selectedIndex: 4,
         onTapDashboard: () => goTo(const DashboardScreen()),
         onTapTugas: () => goTo(const TugasPage()),
         onTapJadwal: () => Navigator.of(context).pop(),
@@ -560,7 +591,7 @@ class _JadwalPageState extends State<JadwalPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Jadwal Pelajaran',
+                  'Jadwal Pembelajaran',
                   style: BrandTextStyles.heading.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 6),
@@ -688,12 +719,23 @@ class _JadwalPageState extends State<JadwalPage> {
       barrierDismissible: true,
       builder: (ctx) {
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: StatefulBuilder(
             builder: (context, setState) {
-              final mapelOptions = const ['Matematika', 'Bahasa Indonesia', 'Bahasa Inggris'];
-              final kelasOptions = const ['Kelas 1', 'Kelas 2', 'Kelas 3'];
+              final mapelOptions = const [
+                'Matematika',
+                'Bahasa Indonesia',
+                'Bahasa Inggris',
+                'IPA',
+                'IPS',
+                'PPKn',
+                'Seni Budaya',
+                'PJOK',
+                'Informatika',
+                'Prakarya',
+              ];
+              final kelasOptions = const ['Kelas 10', 'Kelas 11', 'Kelas 12'];
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
@@ -703,13 +745,12 @@ class _JadwalPageState extends State<JadwalPage> {
                   children: [
                     Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Tambah Jadwal Baru',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0A1F44),
+                            style: BrandTextStyles.subheading.copyWith(
+                              color: BrandColors.navy900,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -784,62 +825,80 @@ class _JadwalPageState extends State<JadwalPage> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0A1F44),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: BrandColors.navy900,
+                              side: const BorderSide(color: BrandColors.navy900, width: 1.4),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
                           ),
                         ),
-                        onPressed: () async {
-                          if (subject == null ||
-                              kelas == null ||
-                              hari == null ||
-                              teacherController.text.isEmpty ||
-                              startController.text.isEmpty ||
-                              endController.text.isEmpty) {
-                            showFeedback(context, 'Lengkapi semua field');
-                            return;
-                          }
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: BrandButtons.primary().copyWith(
+                              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
+                              shape: WidgetStatePropertyAll(
+                                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                            onPressed: () async {
+                              final navigator = Navigator.of(context);
+                              final messenger = ScaffoldMessenger.of(context);
+                              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                              if (subject == null ||
+                                  kelas == null ||
+                                  hari == null ||
+                                  teacherController.text.isEmpty ||
+                                  startController.text.isEmpty ||
+                                  endController.text.isEmpty) {
+                                show('Lengkapi semua field');
+                                return;
+                              }
 
-                          try {
-                            final res = await _api.post(
-                              '/api/jadwal',
-                              body: jsonEncode({
-                                'mapel': subject,
-                                'kelas': kelas,
-                                'guru': teacherController.text,
-                                'hari': hari,
-                                'jam_mulai': startController.text,
-                                'jam_selesai': endController.text,
-                              }),
-                            );
+                              try {
+                                final res = await _api.post(
+                                  '/api/jadwal',
+                                  body: {
+                                    'mapel': subject,
+                                    'kelas': kelas,
+                                    'guru': teacherController.text,
+                                    'hari': hari,
+                                    'jam_mulai': startController.text,
+                                    'jam_selesai': endController.text,
+                                  },
+                                );
 
-                            debugPrint(res.body);
+                                debugPrint(res.body);
 
-                            if (res.statusCode == 201) {
-                              Navigator.of(context).pop();
-                              await _fetchSchedule();
-                              showFeedback(context, 'Jadwal berhasil ditambahkan');
-                            } else {
-                              showFeedback(context, 'Gagal menambahkan jadwal');
-                            }
-                          } catch (e) {
-                            showFeedback(context, 'Error: $e');
-                          }
-                        },
-                        child: const Text(
-                          'Simpan Jadwal',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                                if (res.statusCode == 201) {
+                                  navigator.pop();
+                                  await _fetchSchedule();
+                                  show('Jadwal berhasil ditambahkan');
+                                } else {
+                                  show('Gagal menambahkan jadwal');
+                                }
+                              } catch (e) {
+                                show('Error: $e');
+                              }
+                            },
+                            child: const Text(
+                              'Simpan Jadwal',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -877,13 +936,9 @@ class _ScheduleCard extends StatelessWidget {
     required this.item,
     this.onEdit,
     this.onDelete,
-    this.color = Colors.white,
-    this.borderColor = BrandColors.sand200,
   });
 
   final _ScheduleItem item;
-  final Color color;
-  final Color borderColor;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -896,9 +951,9 @@ class _ScheduleCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.2),
+        border: Border.all(color: BrandColors.sand200, width: 1.2),
         boxShadow: BrandShadows.card,
       ),
       child: Column(

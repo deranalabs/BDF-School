@@ -56,13 +56,13 @@ class _MyAppState extends State<MyApp> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             ).copyWith(
-              overlayColor: MaterialStateProperty.resolveWith(
-                (states) => states.contains(MaterialState.pressed)
-                    ? const Color(0xFF0E1B4F).withOpacity(0.12)
+              overlayColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.pressed)
+                    ? const Color(0xFF0E1B4F).withValues(alpha: 0.12)
                     : null,
               ),
-              elevation: MaterialStateProperty.resolveWith(
-                (states) => states.contains(MaterialState.disabled) ? 0 : 4,
+              elevation: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.disabled) ? 0 : 4,
               ),
             ),
           ),

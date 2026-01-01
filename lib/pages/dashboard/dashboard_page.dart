@@ -14,6 +14,7 @@ import '../tugas/tugas_page.dart';
 import '../profile/profile_page.dart';
 import '../pengaturan/pengaturan_page.dart';
 import '../auth/login_screen.dart';
+import '../notes/notes_page.dart';
 import '../../state/auth_controller.dart';
 import '../../theme/brand.dart';
 import 'sidebar.dart';
@@ -82,13 +83,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (tugasResponse.statusCode == 200) {
         final data = jsonDecode(tugasResponse.body);
         final tugasList = data['success'] == true ? (data['data'] as List) : [];
-        totalTugas = tugasList.length;
+        // Hanya hitung tugas aktif
+        final tugasAktif = tugasList.where((t) => (t['status'] ?? '').toString().toLowerCase() == 'aktif').toList();
+        totalTugas = tugasAktif.length;
 
         // Hitung deadline 7 hari ke depan (termasuk hari ini)
         final today = DateTime.now();
         final start = DateTime(today.year, today.month, today.day);
         final end = start.add(const Duration(days: 7));
-        deadlineMingguIni = tugasList.where((t) {
+        deadlineMingguIni = tugasAktif.where((t) {
           final raw = t['deadline']?.toString();
           if (raw == null || raw.isEmpty) return false;
           final parsed = DateTime.tryParse(raw);
@@ -99,17 +102,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }).length;
 
         // Activity: tugas terbaru
-        for (final t in tugasList.take(5)) {
+        final tugasSorted = [...tugasAktif]
+          ..sort((a, b) {
+            final da = _parseDate(a['deadline']?.toString());
+            final db = _parseDate(b['deadline']?.toString());
+            return (db ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(da ?? DateTime.fromMillisecondsSinceEpoch(0));
+          });
+        for (final t in tugasSorted.take(5)) {
           final dt = _parseDate(t['deadline']?.toString());
-          activities.add(
-            ActivityItem(
-              title: 'Tugas ${t['judul'] ?? ''}',
-              subtitle: t['kelas'] ?? '',
-              timeText: _formatRelativeTime(dt),
-              dotColor: BrandColors.amber400,
-              sortKey: dt,
-            ),
-          );
+          activities.add(ActivityItem(
+            title: 'Tugas ${t['judul'] ?? ''}',
+            subtitle: t['kelas'] ?? '',
+            timeText: _formatRelativeTime(dt),
+            dotColor: BrandColors.amber400,
+            sortKey: dt,
+          ));
         }
       }
       if (pengumumanResponse.statusCode == 200) {
@@ -117,39 +124,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final pengumumanList = data['success'] == true ? (data['data'] as List) : [];
         totalPengumuman = pengumumanList.length;
 
-        for (final p in pengumumanList.take(5)) {
+        final pengumumanSorted = [...pengumumanList]
+          ..sort((a, b) {
+            final da = _parseDate(a['tanggal']?.toString());
+            final db = _parseDate(b['tanggal']?.toString());
+            return (db ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(da ?? DateTime.fromMillisecondsSinceEpoch(0));
+          });
+        for (final p in pengumumanSorted.take(5)) {
           final dt = _parseDate(p['tanggal']?.toString());
-          activities.add(
-            ActivityItem(
-              title: p['judul'] ?? 'Pengumuman',
-              subtitle: p['pengirim'] ?? '',
-              timeText: _formatRelativeTime(dt),
-              dotColor: Colors.redAccent,
-              sortKey: dt,
-            ),
-          );
+          activities.add(ActivityItem(
+            title: p['judul'] ?? 'Pengumuman',
+            subtitle: p['pengirim'] ?? '',
+            timeText: _formatRelativeTime(dt),
+            dotColor: Colors.redAccent,
+            sortKey: dt,
+          ));
         }
       }
       if (presensiResponse.statusCode == 200) {
         final data = jsonDecode(presensiResponse.body);
         final today = DateTime.now().toIso8601String().split('T')[0];
         final presensiList = data['success'] == true ? data['data'] as List : [];
-        kehadiranHariIni = presensiList.where((p) => 
-          p['tanggal']?.toString().startsWith(today) == true && 
-          p['status'] == 'hadir'
-        ).length;
+        final now = DateTime.now();
+        final todayDate = DateTime(now.year, now.month, now.day);
+        kehadiranHariIni = presensiList.where((p) {
+          final status = (p['status'] ?? '').toString().trim().toLowerCase();
+          final rawTanggal = p['tanggal']?.toString();
+          if (rawTanggal == null || rawTanggal.isEmpty || status != 'hadir') return false;
+          final dt = _parseDate(rawTanggal);
+          if (dt != null) {
+            final onlyDate = DateTime(dt.year, dt.month, dt.day);
+            return onlyDate == todayDate;
+          }
+          return rawTanggal.startsWith(today);
+        }).length;
 
-        for (final p in presensiList.take(5)) {
+        final presensiSorted = [...presensiList]
+          ..sort((a, b) {
+            final da = _parseDate(a['tanggal']?.toString());
+            final db = _parseDate(b['tanggal']?.toString());
+            return (db ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(da ?? DateTime.fromMillisecondsSinceEpoch(0));
+          });
+        for (final p in presensiSorted.take(5)) {
           final dt = _parseDate(p['tanggal']?.toString());
-          activities.add(
-            ActivityItem(
-              title: 'Presensi ${p['status'] ?? ''}',
-              subtitle: p['keterangan'] ?? '',
-              timeText: _formatRelativeTime(dt),
-              dotColor: Colors.blueAccent,
-              sortKey: dt,
-            ),
-          );
+          activities.add(ActivityItem(
+            title: 'Presensi ${p['status'] ?? ''}',
+            subtitle: p['keterangan'] ?? '',
+            timeText: _formatRelativeTime(dt),
+            dotColor: Colors.blueAccent,
+            sortKey: dt,
+          ));
         }
       }
 
@@ -185,20 +209,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     
     void logout() async {
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
 
-        if (!mounted) return;
         _scaffoldKey.currentState?.closeDrawer();
 
-        Navigator.of(context).pushAndRemoveUntil(
+        navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Logout gagal: $e'),
             backgroundColor: Colors.red,
@@ -223,6 +247,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           style: BrandTextStyles.appBarTitle,
         ),
         actions: [
+          IconButton(
+            iconSize: 22,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            icon: const Icon(Icons.note_alt_outlined, color: Colors.white),
+            tooltip: 'Catatan Lokal',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotesPage()),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: InkWell(
@@ -230,17 +263,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProfilePage()),
               ),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white.withOpacity(0.2),
-                child: const Text(
-                  'A',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
+              child: Consumer<AuthController>(
+                builder: (context, auth, _) {
+                  final avatar = auth.avatar;
+                  final username = (auth.user?['username'] ?? 'A').toString();
+                  final initials = username.isNotEmpty
+                      ? username.substring(0, 1).toUpperCase()
+                      : 'A';
+                  Widget child;
+                  if (avatar != null && avatar.isNotEmpty) {
+                    child = ClipOval(
+                      child: avatar.startsWith('http')
+                          ? Image.network(avatar, fit: BoxFit.cover)
+                          : Image.asset(avatar, fit: BoxFit.cover),
+                    );
+                  } else {
+                    child = Center(
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    );
+                  }
+                  return CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: child,
+                  );
+                },
               ),
             ),
           ),
@@ -249,12 +303,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       drawer: Sidebar(
         selectedIndex: 0,
         onTapDashboard: () => Navigator.of(context).pop(),
-        onTapTugas: () => goTo(TugasPage()),
-        onTapJadwal: () => goTo(JadwalPage()),
-        onTapPresensi: () => goTo(PresensiPage()),
-        onTapNilai: () => goTo(NilaiPage()),
-        onTapPengumuman: () => goTo(const PengumumanPage()),
         onTapSiswa: () => goTo(const DaftarSiswaPage()),
+        onTapPresensi: () => goTo(const PresensiPage()),
+        onTapNilai: () => goTo(const NilaiPage()),
+        onTapJadwal: () => goTo(JadwalPage()),
+        onTapTugas: () => goTo(TugasPage()),
+        onTapPengumuman: () => goTo(const PengumumanPage()),
         onTapSettings: () => goTo(const PengaturanPage()),
         onLogout: logout,
       ),

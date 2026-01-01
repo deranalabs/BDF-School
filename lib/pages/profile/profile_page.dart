@@ -41,9 +41,17 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _phoneError;
   String _role = '';
   String _username = '';
+  String? _avatarPath;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   ApiClient? _api;
   Map<String, String> _lastLoaded = {};
+  String? _lastAvatarPath;
+  static const List<String> _avatarOptions = [
+    'lib/assets/images/avatar/Avatar.png',
+    'lib/assets/images/avatar/Avatar-1.png',
+    'lib/assets/images/avatar/Avatar-2.png',
+    'lib/assets/images/avatar/Avatar-3.png',
+  ];
 
   @override
   void initState() {
@@ -94,6 +102,12 @@ class _ProfilePageState extends State<ProfilePage> {
         _status.text = (data['status'] ?? '').toString();
         _role = (data['role'] ?? '').toString();
         _username = (data['username'] ?? '').toString();
+        final avatarVal = data['avatar'];
+        _avatarPath = avatarVal is String && avatarVal.isNotEmpty
+            ? (avatarVal.startsWith('http')
+                ? avatarVal
+                : 'lib/assets/images/avatar/$avatarVal')
+            : null;
         _lastLoaded = {
           'first': _firstName.text,
           'last': _lastName.text,
@@ -104,10 +118,21 @@ class _ProfilePageState extends State<ProfilePage> {
           'join_date': _joinDate.text,
           'status': _status.text,
         };
+        _lastAvatarPath = _avatarPath;
         _isDirty = false;
         _emailError = null;
         _phoneError = null;
       });
+      if (mounted) {
+        final auth = Provider.of<AuthController>(context, listen: false);
+        auth.updateUserProfile({
+          'username': _username,
+          'role': _role,
+          'full_name': fullName,
+          'email': _email.text,
+          'avatar': _avatarPath ?? '',
+        });
+      }
     } catch (e) {
       if (mounted) showFeedback(context, 'Gagal memuat profil: $e');
     } finally {
@@ -125,6 +150,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _joinDate.text = _lastLoaded['join_date'] ?? '';
     _status.text = _lastLoaded['status'] ?? '';
     setState(() {
+      _avatarPath = _lastAvatarPath;
       _isDirty = false;
       _emailError = null;
       _phoneError = null;
@@ -139,7 +165,8 @@ class _ProfilePageState extends State<ProfilePage> {
         _address.text != (_lastLoaded['address'] ?? '') ||
         _employeeId.text != (_lastLoaded['employee_id'] ?? '') ||
         _joinDate.text != (_lastLoaded['join_date'] ?? '') ||
-        _status.text != (_lastLoaded['status'] ?? '');
+        _status.text != (_lastLoaded['status'] ?? '') ||
+        _avatarPath != _lastAvatarPath;
     if (dirty != _isDirty) {
       setState(() {
         _isDirty = dirty;
@@ -187,6 +214,9 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _loading = true);
     try {
       final fullName = '${_firstName.text} ${_lastName.text}'.trim();
+      final avatarName = _avatarPath != null && !_avatarPath!.startsWith('http')
+          ? _avatarPath!.split('/').last
+          : (_avatarPath ?? '');
       final res = await _api!.put('/api/profile', body: {
         'full_name': fullName,
         'email': _email.text,
@@ -195,15 +225,19 @@ class _ProfilePageState extends State<ProfilePage> {
         'employee_id': _employeeId.text,
         'join_date': _joinDate.text,
         'status': _status.text,
+        if (avatarName.isNotEmpty) 'avatar': avatarName,
       });
       if (res.statusCode != 200) {
         final msg = jsonDecode(res.body)['message'] ?? 'Gagal menyimpan profil';
         throw Exception(msg);
       }
+      if (!mounted) return;
       showFeedback(context, 'Profil berhasil disimpan');
       await _loadProfile();
+      if (!mounted) return;
       setState(() {
         _isDirty = false;
+        _lastAvatarPath = _avatarPath;
       });
     } catch (e) {
       if (mounted) showFeedback(context, 'Gagal menyimpan profil: $e');
@@ -212,8 +246,93 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _openAvatarPicker() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Pilih Avatar',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: BrandColors.navy900),
+            ),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _avatarOptions.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+              ),
+              itemBuilder: (context, index) {
+                final path = _avatarOptions[index];
+                final isSelected = _avatarPath == path;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _avatarPath = path;
+                      _isDirty = true;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Stack(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? BrandColors.navy900 : BrandColors.gray300,
+                            width: isSelected ? 2 : 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.asset(path, fit: BoxFit.cover),
+                        ),
+                      ),
+                      if (isSelected)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: BrandColors.navy900,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.check, color: Colors.white, size: 14),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
 
     void goTo(Widget page) {
       Navigator.of(context).pop();
@@ -224,15 +343,13 @@ class _ProfilePageState extends State<ProfilePage> {
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        if (!mounted) return;
         _scaffoldKey.currentState?.closeDrawer();
-        Navigator.of(context).pushAndRemoveUntil(
+        navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Logout gagal: $e'),
             backgroundColor: Colors.red,
@@ -247,9 +364,11 @@ class _ProfilePageState extends State<ProfilePage> {
       initials = _username.substring(0, len).toUpperCase();
     }
 
-    Future<bool> _onWillPop() async {
-      if (!_isDirty) return true;
-      return await showDialog<bool>(
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop && _isDirty) {
+          final shouldSave = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
               title: const Text('Perubahan belum disimpan'),
@@ -260,24 +379,25 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: const Text('Buang'),
                 ),
                 TextButton(
-                  onPressed: () async {
-                    Navigator.of(ctx).pop(false);
-                    await _saveProfile();
+                  onPressed: () {
+                    Navigator.of(ctx).pop(true);
+                    _saveProfile();
                   },
                   child: const Text('Simpan'),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text('Batal'),
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('Keluar tanpa simpan'),
                 ),
               ],
             ),
-          ) ??
-          false;
-    }
-
-    return WillPopScope(
-      onWillPop: _onWillPop,
+          );
+          if (!mounted) return;
+          if (shouldSave == true && !_isDirty) {
+            navigator.pop();
+          }
+        }
+      },
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: BrandColors.gray100,
@@ -300,7 +420,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 child: CircleAvatar(
                   radius: 16,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   child: const Icon(Icons.settings, color: Colors.white, size: 18),
                 ),
               ),
@@ -345,6 +465,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             employeeId: _employeeId.text,
                             joinDate: _joinDate.text,
                             status: _status.text.isNotEmpty ? _status.text : 'Aktif',
+                            avatarPath: _avatarPath,
+                            onPickAvatar: _openAvatarPicker,
                           ),
                           const SizedBox(height: 16),
                           _PersonalInfoForm(
@@ -389,6 +511,8 @@ class _HeaderCard extends StatelessWidget {
     required this.employeeId,
     required this.joinDate,
     required this.status,
+    required this.avatarPath,
+    required this.onPickAvatar,
   });
 
   final String username;
@@ -397,6 +521,8 @@ class _HeaderCard extends StatelessWidget {
   final String employeeId;
   final String joinDate;
   final String status;
+  final String? avatarPath;
+  final VoidCallback onPickAvatar;
 
   @override
   Widget build(BuildContext context) {
@@ -423,7 +549,7 @@ class _HeaderCard extends StatelessWidget {
                   border: Border.all(color: BrandColors.amber400, width: 1.2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -437,25 +563,32 @@ class _HeaderCard extends StatelessWidget {
                     color: BrandColors.navy900,
                     border: Border.all(color: Colors.white, width: 3),
                   ),
-                  child: Center(
-                    child: Text(
-                      initials.isNotEmpty ? initials : 'US',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
+                  child: ClipOval(
+                    child: avatarPath != null
+                        ? Image.asset(avatarPath!, fit: BoxFit.cover)
+                        : Center(
+                            child: Text(
+                              initials.isNotEmpty ? initials : 'US',
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: BrandColors.navy900,
-                  shape: BoxShape.circle,
+              GestureDetector(
+                onTap: onPickAvatar,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: BrandColors.navy900,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                 ),
-                child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
               ),
             ],
           ),
@@ -620,7 +753,7 @@ class _PersonalInfoForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final emptyMenu = (BuildContext context, EditableTextState state) =>
+    SizedBox emptyMenu(BuildContext context, EditableTextState state) =>
         const SizedBox.shrink();
 
     return Container(
@@ -630,7 +763,7 @@ class _PersonalInfoForm extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -771,11 +904,11 @@ class _PersonalInfoForm extends StatelessWidget {
                 height: 52,
                 child: ElevatedButton.icon(
                   style: BrandButtons.primary().copyWith(
-                    minimumSize: MaterialStateProperty.all(const Size.fromHeight(52)),
-                    shape: MaterialStateProperty.all(
+                    minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52)),
+                    shape: WidgetStatePropertyAll(
                       RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    elevation: MaterialStateProperty.all(4),
+                    elevation: const WidgetStatePropertyAll(4),
                   ),
                   onPressed: loading ? null : onSave,
                   icon: loading

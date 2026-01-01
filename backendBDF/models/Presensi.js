@@ -17,8 +17,8 @@ class Presensi {
 
   static async getAll(tanggal) {
     const query = tanggal 
-      ? 'SELECT p.*, s.nama as nama_siswa, s.nis FROM presensi p JOIN siswa s ON p.siswa_id = s.id WHERE p.tanggal = ? ORDER BY s.nama'
-      : 'SELECT p.*, s.nama as nama_siswa, s.nis FROM presensi p JOIN siswa s ON p.siswa_id = s.id ORDER BY p.tanggal DESC, s.nama';
+      ? 'SELECT p.*, s.nama as nama_siswa, s.nis, s.kelas FROM presensi p JOIN siswa s ON p.siswa_id = s.id WHERE p.tanggal = ? ORDER BY s.nama'
+      : 'SELECT p.*, s.nama as nama_siswa, s.nis, s.kelas FROM presensi p JOIN siswa s ON p.siswa_id = s.id ORDER BY p.tanggal DESC, s.nama';
     const params = tanggal ? [tanggal] : [];
     
     return new Promise((resolve, reject) => {
@@ -32,7 +32,7 @@ class Presensi {
   static async getById(id) {
     return new Promise((resolve, reject) => {
       db.get(
-        'SELECT p.*, s.nama as nama_siswa, s.nis FROM presensi p JOIN siswa s ON p.siswa_id = s.id WHERE p.id = ?', 
+        'SELECT p.*, s.nama as nama_siswa, s.nis, s.kelas FROM presensi p JOIN siswa s ON p.siswa_id = s.id WHERE p.id = ?', 
         [id], 
         (err, row) => {
           if (err) reject(err);

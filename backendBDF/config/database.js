@@ -28,6 +28,7 @@ const requiredColumns = [
   { name: 'employee_id', type: 'TEXT' },
   { name: 'join_date', type: 'TEXT' },
   { name: 'status', type: "TEXT DEFAULT 'Aktif'" },
+  { name: 'avatar', type: 'TEXT' },
 ];
 
 // Pastikan tabel tugas memiliki kolom status

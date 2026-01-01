@@ -82,6 +82,8 @@ class _PengaturanPageState extends State<PengaturanPage> {
 
   Future<void> _savePrefs() async {
     if (_api == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
     setState(() => _loading = true);
     try {
       final res = await _api!.put('/api/profile', body: {
@@ -95,9 +97,9 @@ class _PengaturanPageState extends State<PengaturanPage> {
         final msg = jsonDecode(res.body)['message'] ?? 'Gagal menyimpan pengaturan';
         throw Exception(msg);
       }
-      showFeedback(context, 'Pengaturan tersimpan');
+      show('Pengaturan tersimpan');
     } catch (e) {
-      if (mounted) showFeedback(context, 'Gagal menyimpan: $e');
+      if (mounted) show('Gagal menyimpan: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -105,18 +107,20 @@ class _PengaturanPageState extends State<PengaturanPage> {
 
   Future<void> _changePassword() async {
     if (_api == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
     if (_currentPass.text.isEmpty ||
         _newPass.text.isEmpty ||
         _confirmPass.text.isEmpty) {
-      showFeedback(context, 'Lengkapi semua field password');
+      show('Lengkapi semua field password');
       return;
     }
     if (_newPass.text.length < 6) {
-      showFeedback(context, 'Password baru minimal 6 karakter');
+      show('Password baru minimal 6 karakter');
       return;
     }
     if (_newPass.text != _confirmPass.text) {
-      showFeedback(context, 'Password baru dan konfirmasi tidak sama');
+      show('Password baru dan konfirmasi tidak sama');
       return;
     }
     setState(() => _loading = true);
@@ -129,14 +133,14 @@ class _PengaturanPageState extends State<PengaturanPage> {
         final msg = jsonDecode(res.body)['message'] ?? 'Gagal mengubah password';
         throw Exception(msg);
       }
-      showFeedback(context, 'Password berhasil diubah');
+      show('Password berhasil diubah');
       _currentPass.clear();
       _newPass.clear();
       _confirmPass.clear();
     } catch (e) {
       if (mounted) {
         final msg = e.toString().replaceFirst('Exception: ', '');
-        showFeedback(context, 'Gagal mengubah password: $msg');
+        show('Gagal mengubah password: $msg');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -144,17 +148,17 @@ class _PengaturanPageState extends State<PengaturanPage> {
   }
 
   Future<void> _logout() async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final authController = Provider.of<AuthController>(context, listen: false);
       await authController.logout();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
+      navigator.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
         (route) => false,
       );
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Logout gagal: $e'),
           backgroundColor: Colors.red,
@@ -189,29 +193,48 @@ class _PengaturanPageState extends State<PengaturanPage> {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProfilePage()),
               ),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.white.withOpacity(0.2),
-                child: const Text(
-                  'A',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
+              child: Consumer<AuthController>(
+                builder: (context, auth, _) {
+                  final avatar = auth.avatar;
+                  final username = (auth.user?['username'] ?? 'A').toString();
+                  final initials = username.isNotEmpty ? username.substring(0, 1).toUpperCase() : 'A';
+                  Widget child;
+                  if (avatar != null && avatar.isNotEmpty) {
+                    child = ClipOval(
+                      child: avatar.startsWith('http')
+                          ? Image.network(avatar, fit: BoxFit.cover)
+                          : Image.asset(avatar, fit: BoxFit.cover),
+                    );
+                  } else {
+                    child = Center(
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    );
+                  }
+                  return CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    child: child,
+                  );
+                },
               ),
             ),
           ),
         ],
       ),
       drawer: Sidebar(
-        selectedIndex: 8,
+        selectedIndex: 7,
         onTapDashboard: () => goTo(const DashboardScreen()),
         onTapTugas: () => goTo(TugasPage()),
-        onTapJadwal: () => goTo(JadwalPage()),
-        onTapPresensi: () => goTo(PresensiPage()),
-        onTapNilai: () => goTo(NilaiPage()),
+        onTapJadwal: () => goTo(const JadwalPage()),
+        onTapPresensi: () => goTo(const PresensiPage()),
+        onTapNilai: () => goTo(const NilaiPage()),
         onTapPengumuman: () => goTo(const PengumumanPage()),
         onTapSiswa: () => goTo(const DaftarSiswaPage()),
         onTapSettings: () => Navigator.of(context).pop(),
@@ -494,7 +517,8 @@ class _SwitchTile extends StatelessWidget {
           ),
           Switch(
             value: value,
-            activeColor: const Color(0xFF0A1E4A),
+            thumbColor: WidgetStatePropertyAll(value ? const Color(0xFF0A1E4A) : null),
+            trackColor: const WidgetStatePropertyAll(Color(0x220A1E4A)),
             onChanged: onChanged,
           ),
         ],

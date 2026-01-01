@@ -18,7 +18,10 @@ import '../../utils/feedback.dart';
 import '../../theme/brand.dart';
 
 class TugasPage extends StatefulWidget {
-  const TugasPage({super.key});
+  const TugasPage({super.key, this.api, this.allowManualDeadlineEntry = false});
+
+  final ApiClient? api;
+  final bool allowManualDeadlineEntry;
 
   @override
   State<TugasPage> createState() => _TugasPageState();
@@ -35,7 +38,7 @@ class _TugasPageState extends State<TugasPage> {
   @override
   void initState() {
     super.initState();
-    _api = ApiClient(context.read<AuthController>());
+    _api = widget.api ?? ApiClient(context.read<AuthController>());
     _fetchTasks();
   }
 
@@ -43,6 +46,26 @@ class _TugasPageState extends State<TugasPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDate(TextEditingController controller) async {
+    final now = DateTime.now();
+    final currentValue = controller.text.trim();
+    DateTime? initial;
+    if (currentValue.isNotEmpty) {
+      try {
+        initial = DateTime.parse(currentValue);
+      } catch (_) {}
+    }
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial ?? now,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked != null) {
+      controller.text = picked.toIso8601String().substring(0, 10);
+    }
   }
 
   Future<void> _fetchTasks() async {
@@ -100,18 +123,18 @@ class _TugasPageState extends State<TugasPage> {
     }
     
     void logout() async {
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        if (!mounted) return;
         _scaffoldKey.currentState?.closeDrawer();
-        Navigator.of(context).pushAndRemoveUntil(
+        navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Logout gagal: $e'),
             backgroundColor: Colors.red,
@@ -134,7 +157,7 @@ class _TugasPageState extends State<TugasPage> {
         title: const Text('Tugas', style: BrandTextStyles.appBarTitle),
       ),
       drawer: Sidebar(
-        selectedIndex: 4,
+        selectedIndex: 5,
         onTapDashboard: () => goTo(const DashboardScreen()),
         onTapTugas: () => Navigator.of(context).pop(),
         onTapJadwal: () => goTo(const JadwalPage()),
@@ -168,7 +191,7 @@ class _TugasPageState extends State<TugasPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Daftar Tugas',
+                      'Daftar Penugasan',
                       style: BrandTextStyles.heading.copyWith(
                         color: Colors.white,
                         fontSize: 28,
@@ -188,8 +211,8 @@ class _TugasPageState extends State<TugasPage> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         style: BrandButtons.accent().copyWith(
-                          padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 14)),
-                          shape: MaterialStateProperty.all(
+                          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
+                          shape: WidgetStatePropertyAll(
                             RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
                         ),
@@ -326,41 +349,43 @@ class _TugasPageState extends State<TugasPage> {
                             ),
                           )
                         else if (_tasks.isEmpty && _error == null)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(24),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[100],
-                                    shape: BoxShape.circle,
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.35,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.assignment_outlined,
+                                      size: 64,
+                                      color: Colors.grey[400],
+                                    ),
                                   ),
-                                  child: Icon(
-                                    Icons.assignment_outlined,
-                                    size: 64,
-                                    color: Colors.grey[400],
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    'Belum ada tugas',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[700],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 24),
-                                Text(
-                                  'Belum ada tugas',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[700],
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Tambahkan tugas pertama Anda',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[500],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Tambahkan tugas pertama Anda',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           )
                         else
@@ -411,13 +436,16 @@ class _TugasPageState extends State<TugasPage> {
   void _showAddTaskDialog() {
     final titleController = TextEditingController();
     final descController = TextEditingController();
-    final kelasController = TextEditingController();
     final guruController = TextEditingController();
     final deadlineController = TextEditingController();
+    String? selectedKelas;
 
     final baseDecoration = InputDecoration(
       filled: true,
-      fillColor: BrandColors.gray100,
+      fillColor: Colors.white,
+      labelStyle: const TextStyle(color: BrandColors.gray700, fontWeight: FontWeight.w600),
+      hintStyle: const TextStyle(color: BrandColors.gray500),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: BrandColors.gray300),
@@ -430,100 +458,150 @@ class _TugasPageState extends State<TugasPage> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: BrandColors.navy900, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        title: Text(
-          'Tambah Tugas Baru',
-          style: BrandTextStyles.subheading.copyWith(
-            color: BrandColors.navy900,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: baseDecoration.copyWith(labelText: 'Judul Tugas'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descController,
-                decoration: baseDecoration.copyWith(labelText: 'Deskripsi'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: kelasController,
-                decoration: baseDecoration.copyWith(labelText: 'Kelas'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: guruController,
-                decoration: baseDecoration.copyWith(labelText: 'Guru'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: deadlineController,
-                decoration: baseDecoration.copyWith(
-                  labelText: 'Deadline (YYYY-MM-DD)',
-                  hintText: '2025-01-31',
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal', style: TextStyle(color: BrandColors.gray700)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (titleController.text.isEmpty ||
-                  kelasController.text.isEmpty ||
-                  guruController.text.isEmpty ||
-                  deadlineController.text.isEmpty) {
-                showFeedback(context, 'Judul, Kelas, Guru, dan Deadline wajib diisi');
-                return;
-              }
-              
-              try {
-                final response = await _api.post(
-                  '/api/tugas',
-                  body: {
-                    'judul': titleController.text,
-                    'deskripsi': descController.text,
-                    'kelas': kelasController.text,
-                    'guru': guruController.text,
-                    'deadline': deadlineController.text,
-                  },
-                );
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Tambah Tugas Baru',
+                          style: BrandTextStyles.subheading.copyWith(
+                            color: BrandColors.navy900,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: titleController,
+                    decoration: baseDecoration.copyWith(labelText: 'Judul Tugas'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: descController,
+                    decoration: baseDecoration.copyWith(labelText: 'Deskripsi'),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: baseDecoration.copyWith(labelText: 'Kelas'),
+                    value: selectedKelas,
+                    items: const ['Kelas 10', 'Kelas 11', 'Kelas 12']
+                        .map((k) => DropdownMenuItem(value: k, child: Text(k)))
+                        .toList(),
+                    onChanged: (v) => setStateDialog(() => selectedKelas = v),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: guruController,
+                    decoration: baseDecoration.copyWith(labelText: 'Guru'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: deadlineController,
+                    readOnly: !widget.allowManualDeadlineEntry,
+                    onTap: () => _selectDate(deadlineController),
+                    decoration: baseDecoration.copyWith(
+                      labelText: 'Deadline (YYYY-MM-DD)',
+                      hintText: '2025-01-31',
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: BrandColors.navy900,
+                            side: const BorderSide(color: BrandColors.navy900, width: 1.4),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: BrandButtons.primary().copyWith(
+                            padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
+                            shape: WidgetStatePropertyAll(
+                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                          onPressed: () async {
+                            if (titleController.text.isEmpty ||
+                                selectedKelas == null ||
+                                guruController.text.isEmpty ||
+                                deadlineController.text.isEmpty) {
+                              showFeedback(context, 'Judul, Kelas, Guru, dan Deadline wajib diisi');
+                              return;
+                            }
 
-                if (response.statusCode == 201) {
-                  Navigator.pop(context);
-                  _fetchTasks();
-                  showFeedback(context, 'Tugas berhasil ditambahkan');
-                } else {
-                  final body = jsonDecode(response.body);
-                  showFeedback(context, body['message'] ?? 'Gagal menambahkan tugas');
-                }
-              } catch (e) {
-                showFeedback(context, 'Error: $e');
-              }
-            },
-            style: BrandButtons.primary(),
-            child: const Text('Simpan'),
-          ),
-        ],
+                            final navigator = Navigator.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
+                            void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                            try {
+                              final response = await _api.post(
+                                '/api/tugas',
+                                body: {
+                                  'judul': titleController.text,
+                                  'deskripsi': descController.text,
+                                  'kelas': selectedKelas,
+                                  'guru': guruController.text,
+                                  'deadline': deadlineController.text,
+                                },
+                              );
+
+                              if (response.statusCode == 201) {
+                                navigator.pop();
+                                await _fetchTasks();
+                                show('Tugas berhasil ditambahkan');
+                              } else {
+                                final body = jsonDecode(response.body);
+                                show(body['message'] ?? 'Gagal menambahkan tugas');
+                              }
+                            } catch (e) {
+                              show('Error: $e');
+                            }
+                          },
+                          child: const Text(
+                            'Simpan',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -555,21 +633,33 @@ class _TugasPageState extends State<TugasPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      builder: (context) => Dialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        title: Text(
-          'Edit Tugas',
-          style: BrandTextStyles.subheading.copyWith(
-            color: BrandColors.navy900,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: SingleChildScrollView(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Edit Tugas',
+                      style: BrandTextStyles.subheading.copyWith(
+                        color: BrandColors.navy900,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: titleController,
                 decoration: baseDecoration.copyWith(labelText: 'Judul Tugas'),
@@ -593,57 +683,88 @@ class _TugasPageState extends State<TugasPage> {
               const SizedBox(height: 12),
               TextField(
                 controller: deadlineController,
+                readOnly: !widget.allowManualDeadlineEntry,
+                onTap: () => _selectDate(deadlineController),
                 decoration: baseDecoration.copyWith(
                   labelText: 'Deadline (YYYY-MM-DD)',
                   hintText: '2025-01-31',
                 ),
               ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: BrandColors.navy900,
+                        side: const BorderSide(color: BrandColors.navy900, width: 1.4),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: BrandButtons.primary().copyWith(
+                        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
+                        shape: WidgetStatePropertyAll(
+                          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (titleController.text.isEmpty ||
+                            kelasController.text.isEmpty ||
+                            guruController.text.isEmpty ||
+                            deadlineController.text.isEmpty) {
+                          showFeedback(context, 'Judul, Kelas, Guru, dan Deadline wajib diisi');
+                          return;
+                        }
+
+                        final navigator = Navigator.of(context);
+                        final messenger = ScaffoldMessenger.of(context);
+                        void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                        try {
+                          final response = await _api.put(
+                            '/api/tugas/${task.id}',
+                            body: {
+                              'judul': titleController.text,
+                              'deskripsi': descController.text,
+                              'kelas': kelasController.text,
+                              'guru': guruController.text,
+                              'deadline': deadlineController.text,
+                            },
+                          );
+
+                          if (response.statusCode == 200) {
+                            navigator.pop();
+                            await _fetchTasks();
+                            show('Tugas berhasil diperbarui');
+                          } else {
+                            final body = jsonDecode(response.body);
+                            show(body['message'] ?? 'Gagal memperbarui tugas');
+                          }
+                        } catch (e) {
+                          show('Error: $e');
+                        }
+                      },
+                      child: const Text(
+                        'Simpan Perubahan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal', style: TextStyle(color: BrandColors.gray700)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (titleController.text.isEmpty ||
-                  kelasController.text.isEmpty ||
-                  guruController.text.isEmpty ||
-                  deadlineController.text.isEmpty) {
-                showFeedback(context, 'Judul, Kelas, Guru, dan Deadline wajib diisi');
-                return;
-              }
-
-              try {
-                final response = await _api.put(
-                  '/api/tugas/${task.id}',
-                  body: {
-                    'judul': titleController.text,
-                    'deskripsi': descController.text,
-                    'kelas': kelasController.text,
-                    'guru': guruController.text,
-                    'deadline': deadlineController.text,
-                  },
-                );
-
-                if (response.statusCode == 200) {
-                  Navigator.pop(context);
-                  _fetchTasks();
-                  showFeedback(context, 'Tugas berhasil diperbarui');
-                } else {
-                  final body = jsonDecode(response.body);
-                  showFeedback(context, body['message'] ?? 'Gagal memperbarui tugas');
-                }
-              } catch (e) {
-                showFeedback(context, 'Error: $e');
-              }
-            },
-            style: BrandButtons.primary(),
-            child: const Text('Simpan Perubahan'),
-          ),
-        ],
       ),
     );
   }
@@ -666,19 +787,22 @@ class _TugasPageState extends State<TugasPage> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
               try {
                 final response = await _api.delete('/api/tugas/${task.id}');
 
                 if (response.statusCode == 200) {
-                  Navigator.pop(context);
-                  _fetchTasks();
-                  showFeedback(context, 'Tugas berhasil dihapus');
+                  navigator.pop();
+                  await _fetchTasks();
+                  show('Tugas berhasil dihapus');
                 } else {
                   final body = jsonDecode(response.body);
-                  showFeedback(context, body['message'] ?? 'Gagal menghapus tugas');
+                  show(body['message'] ?? 'Gagal menghapus tugas');
                 }
               } catch (e) {
-                showFeedback(context, 'Error: $e');
+                show('Error: $e');
               }
             },
             child: const Text('Hapus'),

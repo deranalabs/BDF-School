@@ -32,6 +32,7 @@ router.get('/', authMiddleware, async (req, res) => {
         employee_id: user.employee_id || '',
         join_date: user.join_date || '',
         status: user.status || 'Aktif',
+        avatar: user.avatar || '',
       },
     });
   } catch (error) {
@@ -57,6 +58,7 @@ router.put(
     body('employee_id').optional().isString(),
     body('join_date').optional().isString(),
     body('status').optional().isString(),
+    body('avatar').optional().isString().withMessage('avatar must be string'),
   ],
   async (req, res) => {
     try {
@@ -83,7 +85,11 @@ router.put(
         employee_id: req.body.employee_id,
         join_date: req.body.join_date,
         status: req.body.status,
+        avatar: req.body.avatar,
       };
+
+      // buang undefined agar tidak menimpa nilai lama
+      Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
 
       await User.updateProfile(userId, payload);
 
@@ -107,6 +113,7 @@ router.put(
           employee_id: updated.employee_id || '',
           join_date: updated.join_date || '',
           status: updated.status || 'Aktif',
+          avatar: updated.avatar || '',
         },
       });
     } catch (error) {

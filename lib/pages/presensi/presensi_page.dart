@@ -32,25 +32,23 @@ class _PresensiPageState extends State<PresensiPage> {
   String? _selectedDate;
   
   List<_PresenceRecord> _records = [];
+  List<_StudentOption> _students = [];
   bool _isLoading = false;
+  bool _isLoadingStudents = false;
   String? _error;
   late ApiClient _api;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  void _safePop(BuildContext ctx) {
-    final nav = Navigator.of(ctx);
-    if (nav.canPop()) {
-      nav.pop();
-    }
-  }
-
   String? _sanitizeDate(String raw) {
     final trimmed = raw.trim();
-    final isoMatch = RegExp(r'(\d{4})[-/](\d{2})[-/](\d{2})').firstMatch(trimmed);
-    if (isoMatch != null) {
-      return '${isoMatch.group(1)}-${isoMatch.group(2)}-${isoMatch.group(3)}';
+    // match YYYY-MM-DD with optional time HH:mm or HH:mm:ss
+    final dtMatch = RegExp(r'^(\d{4})[-/](\d{2})[-/](\d{2})(?:[ T](\d{2}:\d{2}(?::\d{2})?))?$').firstMatch(trimmed);
+    if (dtMatch != null) {
+      final datePart = '${dtMatch.group(1)}-${dtMatch.group(2)}-${dtMatch.group(3)}';
+      final timePart = dtMatch.group(4);
+      return timePart != null ? '$datePart $timePart' : datePart;
     }
-    // fallback: take first token before space/T
+    // fallback: take first token before space/T for date-only
     final token = trimmed.split(RegExp(r'[ T]')).firstWhere((e) => e.isNotEmpty, orElse: () => '');
     if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(token)) return token;
     return null;
@@ -71,13 +69,40 @@ class _PresensiPageState extends State<PresensiPage> {
   void initState() {
     super.initState();
     _api = ApiClient(context.read<AuthController>());
+    _fetchStudents();
     _fetchPresensi();
   }
 
+  Future<void> _fetchStudents() async {
+    setState(() => _isLoadingStudents = true);
+    try {
+      final res = await _api.get('/api/siswa');
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final list = (data['data'] as List?) ?? [];
+        setState(() {
+          _students = list
+              .map<_StudentOption>((s) => _StudentOption(
+                    id: s['id'],
+                    name: s['nama'] ?? '',
+                    nis: (s['nis'] ?? '').toString(),
+                    kelas: s['kelas'] ?? '',
+                    jurusan: s['jurusan'] ?? '',
+                  ))
+              .toList();
+        });
+      }
+    } catch (_) {} finally {
+      if (mounted) setState(() => _isLoadingStudents = false);
+    }
+  }
+
   Future<void> _showAddPresensiDialog() async {
-    final siswaController = TextEditingController();
+    _StudentOption? selectedSiswa;
     final now = DateTime.now();
-    final today = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final hh = now.hour.toString().padLeft(2, '0');
+    final mm = now.minute.toString().padLeft(2, '0');
+    final today = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} $hh:$mm';
     final dateController = TextEditingController(text: today);
     _PresenceStatus status = _PresenceStatus.hadir;
     final ketController = TextEditingController();
@@ -134,11 +159,38 @@ class _PresensiPageState extends State<PresensiPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: siswaController,
-                  keyboardType: TextInputType.number,
-                  decoration: inputDecoration('ID Siswa'),
-                ),
+                _isLoadingStudents
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : DropdownButtonFormField<_StudentOption>(
+                        isExpanded: true,
+                        value: selectedSiswa,
+                        decoration: inputDecoration('Pilih Siswa'),
+                        items: _students
+                            .map((s) => DropdownMenuItem(
+                                  value: s,
+                                  child: Text(
+                                    '${s.name} • ${s.nis} • ${s.kelas}/${s.jurusan}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ))
+                            .toList(),
+                        selectedItemBuilder: (_) => _students
+                            .map((s) => Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    '${s.name} • ${s.nis} • ${s.kelas}/${s.jurusan}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (v) => selectedSiswa = v,
+                      ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: dateController,
@@ -167,43 +219,47 @@ class _PresensiPageState extends State<PresensiPage> {
                   height: 50,
                   child: ElevatedButton(
                     style: BrandButtons.primary().copyWith(
-                      minimumSize: MaterialStateProperty.all(const Size(double.infinity, 50)),
+                      minimumSize: const WidgetStatePropertyAll(Size(double.infinity, 50)),
                     ),
-                    onPressed: () async {
-                      if (siswaController.text.isEmpty || dateController.text.isEmpty) {
-                        showFeedback(context, 'ID siswa dan tanggal wajib diisi');
-                        return;
-                      }
-                      final sanitizedDate = _sanitizeDate(dateController.text);
-                      if (sanitizedDate == null) {
-                        showFeedback(context, 'Format tanggal tidak valid, gunakan YYYY-MM-DD');
-                        return;
-                      }
-                      try {
-                        final res = await _api.post(
-                          '/api/presensi',
-                          body: {
-                            'siswa_id': int.tryParse(siswaController.text),
-                            'tanggal': sanitizedDate,
-                            'status': _statusToString(status),
-                            'keterangan': ketController.text,
+                    onPressed: _isLoadingStudents
+                        ? null
+                        : () async {
+                            if (selectedSiswa == null || dateController.text.isEmpty) {
+                              showFeedback(context, 'Siswa dan tanggal wajib diisi');
+                              return;
+                            }
+                            final messenger = ScaffoldMessenger.of(context);
+                            void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                            final navigator = Navigator.of(ctx);
+                            try {
+                              final sanitizedDate = _sanitizeDate(dateController.text);
+                              if (sanitizedDate == null) {
+                                show('Format tanggal tidak valid, gunakan YYYY-MM-DD');
+                                return;
+                              }
+                              final finalDate = sanitizedDate.length == 10
+                                  ? '$sanitizedDate ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}'
+                                  : sanitizedDate;
+                              final res = await _api.post(
+                                '/api/presensi',
+                                body: {
+                                  'siswa_id': selectedSiswa!.id,
+                                  'tanggal': finalDate,
+                                  'status': _statusToString(status),
+                                  'keterangan': ketController.text,
+                                },
+                              );
+                              if (res.statusCode == 201) {
+                                navigator.pop();
+                                await _fetchPresensi();
+                                show('Presensi ditambahkan');
+                              } else {
+                                show('Gagal menambah presensi');
+                              }
+                            } catch (e) {
+                              show('Error: $e');
+                            }
                           },
-                        );
-                        if (res.statusCode == 201) {
-                          if (!mounted) return;
-                          _safePop(ctx);
-                          await _fetchPresensi();
-                          if (!mounted) return;
-                          showFeedback(context, 'Presensi ditambahkan');
-                        } else {
-                          if (!mounted) return;
-                          showFeedback(context, 'Gagal menambah presensi');
-                        }
-                      } catch (e) {
-                        if (!mounted) return;
-                        showFeedback(context, 'Error: $e');
-                      }
-                    },
                     child: const Text(
                       'Simpan',
                       style: TextStyle(
@@ -214,11 +270,21 @@ class _PresensiPageState extends State<PresensiPage> {
                     ),
                   ),
                 ),
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text(
-                    'Batal',
-                    style: TextStyle(color: BrandColors.navy900, fontWeight: FontWeight.w600),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: BrandColors.navy900,
+                      side: const BorderSide(color: BrandColors.navy900),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text(
+                      'Batal',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
               ],
@@ -247,11 +313,14 @@ class _PresensiPageState extends State<PresensiPage> {
       final res = await _api.delete('/api/presensi/${record.id}');
       if (res.statusCode == 200) {
         await _fetchPresensi();
+        if (!mounted) return;
         showFeedback(context, 'Presensi dihapus');
       } else {
+        if (!mounted) return;
         showFeedback(context, 'Gagal hapus presensi');
       }
     } catch (e) {
+      if (!mounted) return;
       showFeedback(context, 'Error: $e');
     }
   }
@@ -262,20 +331,6 @@ class _PresensiPageState extends State<PresensiPage> {
     String? dateTemp = _selectedDate;
     dateTemp = _sanitizeDate(dateTemp ?? '') ?? dateTemp;
     final dateCtrl = TextEditingController(text: dateTemp ?? '');
-
-    Future<void> pickDate() async {
-      final now = DateTime.now();
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: now,
-        firstDate: DateTime(now.year - 1),
-        lastDate: DateTime(now.year + 1),
-      );
-      if (picked != null) {
-        dateTemp = '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-        dateCtrl.text = dateTemp!;
-      }
-    }
 
     showDialog<Map<String, dynamic>?>(
       context: context,
@@ -336,10 +391,9 @@ class _PresensiPageState extends State<PresensiPage> {
                         isExpanded: true,
                         items: const [
                           DropdownMenuItem(value: 'Semua Kelas', child: Text('Semua Kelas')),
-                          DropdownMenuItem(value: 'Kelas 1', child: Text('Kelas 1')),
-                          DropdownMenuItem(value: 'Kelas 2', child: Text('Kelas 2')),
-                          DropdownMenuItem(value: 'Kelas 3', child: Text('Kelas 3')),
-                          DropdownMenuItem(value: 'Kelas 4', child: Text('Kelas 4')),
+                          DropdownMenuItem(value: '10', child: Text('Kelas 10')),
+                          DropdownMenuItem(value: '11', child: Text('Kelas 11')),
+                          DropdownMenuItem(value: '12', child: Text('Kelas 12')),
                         ],
                         onChanged: (v) => setStateDialog(() => kelasTemp = v ?? 'Semua Kelas'),
                       ),
@@ -446,7 +500,8 @@ class _PresensiPageState extends State<PresensiPage> {
     });
 
     try {
-      final query = _selectedDate != null ? '?tanggal=${Uri.encodeQueryComponent(_selectedDate!)}' : '';
+      final hasDate = _selectedDate != null && _selectedDate!.trim().isNotEmpty;
+      final query = hasDate ? '?tanggal=${Uri.encodeQueryComponent(_selectedDate!.trim())}' : '';
       final response = await _api.get('/api/presensi$query');
       
       if (response.statusCode == 200) {
@@ -455,13 +510,18 @@ class _PresensiPageState extends State<PresensiPage> {
           final records = (data['data'] as List).map((record) {
             final rawTanggal = (record['tanggal'] ?? '').toString();
             final sanitizedDate = _sanitizeDate(rawTanggal) ?? rawTanggal;
-            final time = _extractTime(rawTanggal);
+            final timeFromRaw = _extractTime(rawTanggal);
+            final time = timeFromRaw.isNotEmpty ? timeFromRaw : _extractTime(sanitizedDate);
+            final rawKelas = (record['kelas'] ?? '').toString().trim();
+            final kelasClean = rawKelas.toLowerCase().startsWith('kelas')
+                ? rawKelas.replaceFirst(RegExp('^kelas\\s*', caseSensitive: false), '')
+                : rawKelas;
             return _PresenceRecord(
               id: record['id']?.toString(),
               siswaId: record['siswa_id']?.toString(),
               name: record['nama_siswa'] ?? 'Unknown',
               nis: (record['nis'] ?? '').toString(),
-              kelas: (record['kelas'] ?? 'Kelas').toString(),
+              kelas: kelasClean.isEmpty ? '-' : kelasClean,
               status: _parseStatus(record['status']),
               tanggal: sanitizedDate,
               keterangan: (record['keterangan'] ?? '').toString(),
@@ -556,7 +616,6 @@ class _PresensiPageState extends State<PresensiPage> {
 
   @override
   Widget build(BuildContext context) {
-    int count(_PresenceStatus status) => _records.where((r) => r.status == status).length;
     final query = _searchController.text.trim().toLowerCase();
     final visibleRecords = _records.where((r) {
       final matchClass = _selectedClass == 'Semua Kelas' || r.kelas == _selectedClass;
@@ -565,24 +624,25 @@ class _PresensiPageState extends State<PresensiPage> {
       final matchDate = _selectedDate == null || (r.tanggal.startsWith(_selectedDate!) || r.time.startsWith(_selectedDate!));
       return matchClass && matchSearch && matchStatus && matchDate;
     }).toList();
+    int countFiltered(_PresenceStatus status) => visibleRecords.where((r) => r.status == status).length;
 
     void goTo(Widget page) {
       Navigator.of(context).pop();
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => page));
     }
     void logout() async {
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        if (!mounted) return;
         _scaffoldKey.currentState?.closeDrawer();
-        Navigator.of(context).pushAndRemoveUntil(
+        navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Logout gagal: $e'),
             backgroundColor: Colors.red,
@@ -648,7 +708,7 @@ class _PresensiPageState extends State<PresensiPage> {
                     Expanded(
                       child: _StatCard(
                         title: 'Hadir',
-                        value: count(_PresenceStatus.hadir).toString(),
+                        value: countFiltered(_PresenceStatus.hadir).toString(),
                         color: BrandColors.success,
                         icon: Icons.check_circle,
                       ),
@@ -657,7 +717,7 @@ class _PresensiPageState extends State<PresensiPage> {
                     Expanded(
                       child: _StatCard(
                         title: 'Izin',
-                        value: count(_PresenceStatus.izin).toString(),
+                        value: countFiltered(_PresenceStatus.izin).toString(),
                         color: BrandColors.navy700,
                         icon: Icons.description,
                       ),
@@ -670,7 +730,7 @@ class _PresensiPageState extends State<PresensiPage> {
                     Expanded(
                       child: _StatCard(
                         title: 'Sakit',
-                        value: count(_PresenceStatus.sakit).toString(),
+                        value: countFiltered(_PresenceStatus.sakit).toString(),
                         color: BrandColors.amber400,
                         icon: Icons.medical_services,
                       ),
@@ -679,7 +739,7 @@ class _PresensiPageState extends State<PresensiPage> {
                     Expanded(
                       child: _StatCard(
                         title: 'Alpha',
-                        value: count(_PresenceStatus.alfa).toString(),
+                        value: countFiltered(_PresenceStatus.alfa).toString(),
                         color: BrandColors.error,
                         icon: Icons.cancel,
                       ),
@@ -704,6 +764,11 @@ class _PresensiPageState extends State<PresensiPage> {
   }
 
   Widget _buildContent(List<_PresenceRecord> visibleRecords) {
+    final hasFilter = _selectedClass != 'Semua Kelas' ||
+        _selectedStatus != null ||
+        (_selectedDate?.isNotEmpty ?? false) ||
+        _searchController.text.trim().isNotEmpty;
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
@@ -744,8 +809,75 @@ class _PresensiPageState extends State<PresensiPage> {
     if (visibleRecords.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
         children: [
-          const SizedBox(height: 80),
+          // Search + CTA row (tetap tampil meski kosong)
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Cari nama siswa',
+                    hintStyle: const TextStyle(color: BrandColors.gray500),
+                    prefixIcon: const Icon(Icons.search, color: BrandColors.gray500),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: BrandColors.gray300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: BrandColors.gray300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: BrandColors.navy900, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 130),
+                child: ElevatedButton.icon(
+                  style: BrandButtons.accent().copyWith(
+                    minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
+                    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: _showAddPresensiDialog,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text(
+                    'Tambah',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  onPressed: _openFilter,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
           Icon(Icons.calendar_today, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 12),
           const Center(
@@ -761,11 +893,34 @@ class _PresensiPageState extends State<PresensiPage> {
           const SizedBox(height: 6),
           Center(
             child: Text(
-              'Tambahkan atau muat ulang data presensi',
+              hasFilter ? 'Coba reset filter untuk menampilkan semua data' : 'Tambahkan atau muat ulang data presensi',
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ),
           const SizedBox(height: 20),
+          if (hasFilter)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BrandColors.navy900,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () {
+                  setState(() {
+                    _selectedClass = 'Semua Kelas';
+                    _selectedStatus = null;
+                    _selectedDate = null;
+                    _dateController.clear();
+                    _searchController.clear();
+                  });
+                  _fetchPresensi();
+                },
+                child: const Text('Reset filter'),
+              ),
+            ),
         ],
       );
     }
@@ -815,8 +970,8 @@ class _PresensiPageState extends State<PresensiPage> {
                 constraints: const BoxConstraints(maxWidth: 130),
                 child: ElevatedButton.icon(
                   style: BrandButtons.accent().copyWith(
-                    minimumSize: MaterialStateProperty.all(const Size(0, 44)),
-                    padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
+                    minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
+                    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   onPressed: _showAddPresensiDialog,
@@ -952,30 +1107,26 @@ class _PresenceCard extends StatelessWidget {
                   style: BrandTextStyles.subheading.copyWith(fontSize: 16, color: BrandColors.navy900),
                 ),
                 const SizedBox(height: 6),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F4FD),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        record.kelas,
-                        style: BrandTextStyles.caption.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: BrandColors.navy900,
-                        ),
-                      ),
+                    _InfoChip(
+                      label: 'NIS: ${record.nis}',
+                      bg: const Color(0xFFF1F5F9),
+                      fg: BrandColors.navy900,
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      record.time,
-                      style: BrandTextStyles.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: BrandColors.gray700,
-                      ),
+                    _InfoChip(
+                      label: 'Kelas: ${record.kelas}',
+                      bg: const Color(0xFFE8F4FD),
+                      fg: BrandColors.navy900,
                     ),
+                    if (record.tanggal.isNotEmpty)
+                      _InfoChip(
+                        label: 'Tanggal: ${record.tanggal}',
+                        bg: const Color(0xFFF1F5F9),
+                        fg: BrandColors.gray700,
+                      ),
                   ],
                 ),
               ],
@@ -993,6 +1144,19 @@ class _PresenceCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.edit, size: 20, color: Color(0xFF4A5568)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: onDelete,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF1F2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.delete, size: 20, color: Color(0xFFD32F2F)),
             ),
           ),
         ],
@@ -1227,6 +1391,48 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.label, required this.bg, required this.fg});
+
+  final String label;
+  final Color bg;
+  final Color fg;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: BrandTextStyles.caption.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentOption {
+  final int? id;
+  final String name;
+  final String nis;
+  final String kelas;
+  final String jurusan;
+
+  const _StudentOption({
+    required this.id,
+    required this.name,
+    required this.nis,
+    required this.kelas,
+    required this.jurusan,
+  });
+}
+
 enum _PresenceStatus { hadir, izin, sakit, alfa }
 
 class _PresenceRecord {
@@ -1237,16 +1443,16 @@ class _PresenceRecord {
   final String kelas;
   final String time;
   final String tanggal;
-  final String keterangan;
+  final String? keterangan;
   final _PresenceStatus status;
-  
+
   const _PresenceRecord({
     this.id,
     this.siswaId,
     required this.name,
     this.nis = '',
     required this.kelas,
-    required this.time,
+    this.time = '',
     this.tanggal = '',
     this.keterangan = '',
     required this.status,

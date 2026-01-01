@@ -33,6 +33,8 @@ class _NilaiDetailPageState extends State<NilaiDetailPage> {
   String _semester = 'Ganjil';
   String _tahunAjaran = '2024/2025';
   bool _hasChanges = false;
+  String? _nis;
+  String? _kelas;
 
   @override
   void initState() {
@@ -181,13 +183,22 @@ class _NilaiDetailPageState extends State<NilaiDetailPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            widget.kelas,
+                            _kelas ?? widget.kelas,
                             style: const TextStyle(
                               fontSize: 13,
                               color: BrandColors.gray700,
                             ),
                           ),
-                          if (widget.studentId != null) ...[
+                          if ((_nis ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'NIS: ${_nis!}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: BrandColors.gray500,
+                              ),
+                            ),
+                          ] else if (widget.studentId != null) ...[
                             const SizedBox(height: 4),
                             Text(
                               'ID: ${widget.studentId}',
@@ -262,6 +273,8 @@ class _NilaiDetailPageState extends State<NilaiDetailPage> {
     final uasCtrl = TextEditingController();
     String selectedSemester = _semester;
     String selectedTahun = _tahunAjaran;
+    String selectedMapel = 'Matematika';
+    bool isCustomMapel = false;
 
     await showDialog(
       context: context,
@@ -300,14 +313,49 @@ class _NilaiDetailPageState extends State<NilaiDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: mapelCtrl,
+                    DropdownButtonFormField<String>(
+                      value: selectedMapel,
                       decoration: const InputDecoration(
                         labelText: 'Mata Pelajaran',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                      isExpanded: true,
+                      items: const [
+                        DropdownMenuItem(value: 'Matematika', child: Text('Matematika')),
+                        DropdownMenuItem(value: 'Bahasa Indonesia', child: Text('Bahasa Indonesia')),
+                        DropdownMenuItem(value: 'Bahasa Inggris', child: Text('Bahasa Inggris')),
+                        DropdownMenuItem(value: 'IPA', child: Text('IPA')),
+                        DropdownMenuItem(value: 'IPS', child: Text('IPS')),
+                        DropdownMenuItem(value: 'PPKn', child: Text('PPKn')),
+                        DropdownMenuItem(value: 'Seni Budaya', child: Text('Seni Budaya')),
+                        DropdownMenuItem(value: 'PJOK', child: Text('PJOK')),
+                        DropdownMenuItem(value: 'Informatika', child: Text('Informatika')),
+                        DropdownMenuItem(value: 'Prakarya', child: Text('Prakarya')),
+                        DropdownMenuItem(value: 'Lainnya', child: Text('Lainnya (ketik manual)')),
+                      ],
+                      onChanged: (v) {
+                        setStateDialog(() {
+                          selectedMapel = v ?? 'Matematika';
+                          isCustomMapel = selectedMapel == 'Lainnya';
+                          if (!isCustomMapel) {
+                            mapelCtrl.text = selectedMapel;
+                          } else {
+                            mapelCtrl.clear();
+                          }
+                        });
+                      },
                     ),
+                    if (isCustomMapel) ...[
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: mapelCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Mata Pelajaran (Lainnya)',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -400,20 +448,17 @@ class _NilaiDetailPageState extends State<NilaiDetailPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: BrandColors.navy900,
+                              side: const BorderSide(color: BrandColors.navy900),
+                              minimumSize: const Size(double.infinity, 48),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             onPressed: () => Navigator.of(context).pop(),
                             child: const Text(
                               'Batal',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -423,52 +468,45 @@ class _NilaiDetailPageState extends State<NilaiDetailPage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF0A1F44),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                              minimumSize: const Size(double.infinity, 48),
                             ),
                             onPressed: () async {
+                              final navigator = Navigator.of(context);
+                              final messenger = ScaffoldMessenger.of(context);
+                              void show(String msg, {Color? color}) =>
+                                  messenger.showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
                               if (formKey.currentState!.validate()) {
                                 try {
                                   final response = await ApiClient(context.read<AuthController>()).post(
                                     '/api/nilai',
-                                    body: jsonEncode({
+                                    body: {
                                       'siswa_id': widget.studentId,
-                                      'mata_pelajaran': mapelCtrl.text.trim(),
+                                      'mata_pelajaran': (isCustomMapel ? mapelCtrl.text : selectedMapel).trim(),
                                       'tugas': int.tryParse(tugasCtrl.text) ?? 0,
                                       'uts': int.tryParse(utsCtrl.text) ?? 0,
                                       'uas': int.tryParse(uasCtrl.text) ?? 0,
                                       'semester': selectedSemester,
                                       'tahun_ajaran': selectedTahun,
-                                    }),
+                                    },
                                   );
 
                                   if (response.statusCode == 201) {
-                                    Navigator.of(context).pop();
+                                    navigator.pop();
                                     setState(() {
                                       _semester = selectedSemester;
                                       _tahunAjaran = selectedTahun;
                                       _hasChanges = true;
                                     });
                                     await _fetchNilai();
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Nilai berhasil ditambahkan'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
+                                    show('Nilai berhasil ditambahkan', color: Colors.green);
                                   } else {
                                     final body = jsonDecode(response.body);
                                     throw Exception(body['message'] ?? 'Gagal menambah nilai');
                                   }
                                 } catch (e) {
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: ${e.toString()}'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+                                  show('Error: ${e.toString()}', color: Colors.red);
                                 }
                               }
                             },
@@ -562,12 +600,16 @@ class _NilaiDetailPageState extends State<NilaiDetailPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
-          final list = (data['data'] as List)
-              .map((e) => _SubjectGrades.fromApi(e))
-              .toList();
+          final rawList = (data['data'] as List);
+          final list = rawList.map((e) => _SubjectGrades.fromApi(e)).toList();
           setState(() {
             _subjects = list;
             _isLoading = false;
+            if (rawList.isNotEmpty) {
+              final first = rawList.first as Map<String, dynamic>;
+              _nis = (first['nis'] ?? '').toString();
+              _kelas = (first['kelas'] ?? widget.kelas).toString();
+            }
           });
         } else {
           throw Exception(data['message'] ?? 'Gagal memuat nilai');
