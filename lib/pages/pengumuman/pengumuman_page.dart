@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import '../../theme/brand.dart';
+import '../../utils/feedback.dart';
 
 import '../dashboard/dashboard_page.dart';
 import '../dashboard/sidebar.dart';
@@ -270,8 +271,7 @@ class _PengumumanPageState extends State<PengumumanPage> {
                         ),
                         onPressed: () async {
                           final navigator = Navigator.of(context);
-                          final messenger = ScaffoldMessenger.of(context);
-                          void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                          void show(String msg) => showFeedback(context, msg);
                           try {
                             if (_titleController.text.trim().isEmpty ||
                                 _messageController.text.trim().isEmpty ||
@@ -293,14 +293,18 @@ class _PengumumanPageState extends State<PengumumanPage> {
                               }),
                             );
                             if (res.statusCode == 201) {
+                              if (!mounted) return;
                               navigator.pop();
                               await _fetchPengumuman();
+                              if (!mounted) return;
                               show('Pengumuman berhasil ditambahkan');
                             } else {
                               final body = jsonDecode(res.body);
+                              if (!mounted) return;
                               show(body['message'] ?? 'Gagal menambah pengumuman');
                             }
                           } catch (e) {
+                            if (!mounted) return;
                             show('Error: $e');
                           }
                         },
@@ -325,7 +329,6 @@ class _PengumumanPageState extends State<PengumumanPage> {
   }
 
   Future<void> _deleteAnnouncement(_Announcement ann) async {
-    final messenger = ScaffoldMessenger.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -341,15 +344,18 @@ class _PengumumanPageState extends State<PengumumanPage> {
 
     try {
       final res = await _api.delete('/api/pengumuman/${ann.id}');
+      if (!mounted) return;
       if (res.statusCode == 200) {
         await _fetchPengumuman();
-        messenger.showSnackBar(const SnackBar(content: Text('Pengumuman dihapus')));
+        if (!mounted) return;
+        showFeedback(context, 'Pengumuman dihapus');
       } else {
         final body = jsonDecode(res.body);
-        messenger.showSnackBar(SnackBar(content: Text(body['message'] ?? 'Gagal menghapus pengumuman')));
+        showFeedback(context, body['message'] ?? 'Gagal menghapus pengumuman');
       }
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (!mounted) return;
+      showFeedback(context, 'Error: $e');
     }
   }
 
@@ -481,8 +487,7 @@ class _PengumumanPageState extends State<PengumumanPage> {
                         ),
                         onPressed: () async {
                           final navigator = Navigator.of(context);
-                          final messenger = ScaffoldMessenger.of(context);
-                          void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                          void show(String msg) => showFeedback(context, msg);
                           try {
                             if (_titleController.text.trim().isEmpty ||
                                 _messageController.text.trim().isEmpty ||
@@ -492,8 +497,8 @@ class _PengumumanPageState extends State<PengumumanPage> {
                               return;
                             }
 
-                            final res = await _api.put(
-                              '/api/pengumuman/${ann.id}',
+                            final res = await _api.post(
+                              '/api/pengumuman',
                               body: jsonEncode({
                                 'judul': _titleController.text,
                                 'prioritas': _categoryController.text,
@@ -503,13 +508,13 @@ class _PengumumanPageState extends State<PengumumanPage> {
                                 'tanggal': _dateController.text,
                               }),
                             );
-                            if (res.statusCode == 200) {
+                            if (res.statusCode == 201) {
                               navigator.pop();
                               await _fetchPengumuman();
-                              show('Pengumuman diperbarui');
+                              show('Pengumuman berhasil ditambahkan');
                             } else {
                               final body = jsonDecode(res.body);
-                              show(body['message'] ?? 'Gagal memperbarui pengumuman');
+                              show(body['message'] ?? 'Gagal menambah pengumuman');
                             }
                           } catch (e) {
                             show('Error: $e');
@@ -544,19 +549,18 @@ class _PengumumanPageState extends State<PengumumanPage> {
 
     void logout() async {
       final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
+      void show(String msg) => showFeedback(context, msg);
       try {
-        final authController = Provider.of<AuthController>(context, listen: false);
-        await authController.logout();
+        final auth = Provider.of<AuthController>(context, listen: false);
+        await auth.logout();
         _scaffoldKey.currentState?.closeDrawer();
+        show('Logout berhasil');
         navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
       } catch (e) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Logout gagal: $e'), backgroundColor: Colors.red),
-        );
+        show('Logout gagal: $e');
       }
     }
 

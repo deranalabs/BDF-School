@@ -124,23 +124,23 @@ class _TugasPageState extends State<TugasPage> {
     
     void logout() async {
       final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
+      void show(String msg) => showFeedback(context, msg);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        _scaffoldKey.currentState?.closeDrawer();
-        navigator.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
       } catch (e) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Logout gagal: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (!mounted) return;
+        show('Logout gagal: $e');
+        return;
       }
+
+      if (!mounted) return;
+      _scaffoldKey.currentState?.closeDrawer();
+      show('Logout berhasil');
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
     }
 
     return Scaffold(
@@ -559,8 +559,7 @@ class _TugasPageState extends State<TugasPage> {
                             }
 
                             final navigator = Navigator.of(context);
-                            final messenger = ScaffoldMessenger.of(context);
-                            void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                            void show(String msg) => showFeedback(context, msg);
                             try {
                               final response = await _api.post(
                                 '/api/tugas',
@@ -575,6 +574,23 @@ class _TugasPageState extends State<TugasPage> {
 
                               if (response.statusCode == 201) {
                                 navigator.pop();
+                                if (mounted) {
+                                  setState(() {
+                                    _tasks = [
+                                      TaskItem(
+                                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                        title: titleController.text.trim(),
+                                        description: descController.text.trim(),
+                                        subject: guruController.text.trim(),
+                                        kelas: selectedKelas ?? '',
+                                        deadline: deadlineController.text,
+                                        status: TaskStatus.aktif,
+                                        teacher: guruController.text.trim(),
+                                      ),
+                                      ..._tasks,
+                                    ];
+                                  });
+                                }
                                 await _fetchTasks();
                                 show('Tugas berhasil ditambahkan');
                               } else {
@@ -724,13 +740,12 @@ class _TugasPageState extends State<TugasPage> {
                         }
 
                         final navigator = Navigator.of(context);
-                        final messenger = ScaffoldMessenger.of(context);
-                        void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                        void show(String msg) => showFeedback(context, msg);
                         try {
                           final response = await _api.put(
                             '/api/tugas/${task.id}',
                             body: {
-                              'judul': titleController.text,
+                              'judul': titleController.text.trim(),
                               'deskripsi': descController.text,
                               'kelas': kelasController.text,
                               'guru': guruController.text,
@@ -787,14 +802,14 @@ class _TugasPageState extends State<TugasPage> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
-              final navigator = Navigator.of(context);
-              final messenger = ScaffoldMessenger.of(context);
-              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+              void show(String msg) => showFeedback(context, msg);
               try {
                 final response = await _api.delete('/api/tugas/${task.id}');
 
                 if (response.statusCode == 200) {
-                  navigator.pop();
+                  setState(() {
+                    Navigator.pop(context);
+                  });
                   await _fetchTasks();
                   show('Tugas berhasil dihapus');
                 } else {

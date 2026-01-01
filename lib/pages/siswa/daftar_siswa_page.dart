@@ -233,35 +233,33 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
                         return;
                       }
 
-                      final navigator = Navigator.of(dialogCtx);
-                      final messenger = ScaffoldMessenger.of(ctx);
-                      void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
-                      try {
-                        final res = await _api.post(
-                          '/api/siswa',
-                          body: {
-                            'nama': nameController.text,
-                            'nis': nisController.text,
-                            'kelas': kelas,
-                            'jurusan': jurusan,
-                            'alamat': alamatController.text,
-                            'no_telp': noTelpController.text,
-                          },
-                        );
-
-                        if (res.statusCode == 201) {
-                          navigator.pop();
-                          await _fetchStudents();
-                          show('Siswa berhasil ditambahkan');
-                        } else if (res.statusCode == 409) {
-                          show('NIS sudah digunakan');
-                        } else {
-                          final body = jsonDecode(res.body);
-                          show(body['message']?.toString() ?? 'Gagal menambah siswa');
-                        }
-                      } catch (e) {
-                        show('Error: $e');
+                        final navigator = Navigator.of(dialogCtx);
+                    void show(String msg) => showFeedback(ctx, msg);
+                    try {
+                      final res = await _api.post(
+                        '/api/siswa',
+                        body: jsonEncode({
+                          'nama': nameController.text,
+                          'nis': nisController.text,
+                          'kelas': kelas,
+                          'jurusan': jurusan,
+                          'alamat': alamatController.text,
+                          'no_telp': noTelpController.text,
+                        }),
+                      );
+                      if (res.statusCode == 201) {
+                        navigator.pop();
+                        await _fetchStudents();
+                        show('Siswa berhasil ditambahkan');
+                      } else if (res.statusCode == 409) {
+                        show('NIS sudah digunakan');
+                      } else {
+                        final body = jsonDecode(res.body);
+                        show(body['message'] ?? 'Gagal menambah siswa');
                       }
+                    } catch (e) {
+                      show('Error: $e');
+                    }
                     },
                     icon: const Icon(Icons.save),
                     label: const Text('Simpan Data'),
@@ -288,23 +286,23 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
     
     void logout() async {
       final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
+      void show(String msg) => showFeedback(context, msg);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        _scaffoldKey.currentState?.closeDrawer();
-        navigator.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
       } catch (e) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Logout gagal: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (!mounted) return;
+        show('Logout gagal: $e');
+        return;
       }
+
+      if (!mounted) return;
+      _scaffoldKey.currentState?.closeDrawer();
+      show('Logout berhasil');
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
     }
 
     return Scaffold(
@@ -688,19 +686,18 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
             style: BrandButtons.primary(),
             onPressed: () async {
               final navigator = Navigator.of(ctx);
-              final messenger = ScaffoldMessenger.of(context);
-              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+              void show(String msg) => showFeedback(ctx, msg);
               try {
                 final response = await _api.put(
                   '/api/siswa/${student.id}',
-                  body: {
+                  body: jsonEncode({
                     'nama': nameController.text,
                     'nis': nisController.text,
                     'kelas': kelas,
                     'jurusan': jurusan,
                     'alamat': alamatController.text,
                     'no_telp': noTelpController.text,
-                  },
+                  }),
                 );
 
                 if (response.statusCode == 200) {
@@ -740,13 +737,12 @@ class _DaftarSiswaPageState extends State<DaftarSiswaPage> {
             style: BrandButtons.destructive(),
             onPressed: () async {
               final navigator = Navigator.of(ctx);
-              final messenger = ScaffoldMessenger.of(ctx);
-              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+              void show(String msg) => showFeedback(ctx, msg);
               try {
                 final response = await _api.delete('/api/siswa/${student.id}');
 
                 if (response.statusCode == 200) {
-                  navigator.pop();
+                  navigator.pop(true);
                   await _fetchStudents();
                   show('Siswa berhasil dihapus');
                 } else {

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../utils/api_client.dart';
 import '../../state/auth_controller.dart';
 import '../../theme/brand.dart';
+import '../../utils/feedback.dart';
 import '../dashboard/dashboard_page.dart';
 import '../dashboard/sidebar.dart';
 import '../tugas/tugas_page.dart';
@@ -97,23 +98,23 @@ class _NilaiPageState extends State<NilaiPage> {
 
     void logout() async {
       final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
+      void show(String msg) => showFeedback(context, msg);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        _scaffoldKey.currentState?.closeDrawer();
-        navigator.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
       } catch (e) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Logout gagal: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (!mounted) return;
+        show('Logout gagal: $e');
+        return;
       }
+
+      if (!mounted) return;
+      _scaffoldKey.currentState?.closeDrawer();
+      show('Logout berhasil');
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
     }
 
     return Scaffold(
@@ -497,9 +498,7 @@ class _NilaiPageState extends State<NilaiPage> {
                             onPressed: () async {
                               if (formKey.currentState!.validate()) {
                                 final navigator = Navigator.of(context);
-                                final messenger = ScaffoldMessenger.of(context);
-                                void show(String msg, {Color? color}) =>
-                                    messenger.showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
+                                void show(String msg, {Color? color}) => showFeedback(context, msg);
                                 try {
                                   final response = await _api.post(
                                     '/api/nilai',
@@ -782,7 +781,7 @@ class _StudentRecord {
       name: name,
       nis: (json['nis'] ?? '').toString(),
       kelas: json['kelas'] as String? ?? '',
-      mapelCount: json['mapel_count'] as int? ?? 3,
+      mapelCount: int.tryParse(json['mapel_count']?.toString() ?? '') ?? 0,
       avatar: firstChar,
       color: colors[colorIndex],
     );

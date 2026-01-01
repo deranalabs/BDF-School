@@ -57,9 +57,10 @@ class AuthController extends ChangeNotifier {
           _token = data['token'];
           _user = data['user'];
           _isAuthenticated = true;
-          // setelah login, ambil profil lengkap (termasuk avatar) agar dashboard/sidebar langsung sinkron
-          await _fetchAndCacheProfile();
+          // Segera beritahu listener agar home bergeser ke dashboard
           notifyListeners();
+          // kemudian coba sinkron profil (jika gagal, tidak blok navigasi)
+          await _fetchAndCacheProfile();
         } else {
           throw AuthException(data['message'] ?? 'Login gagal');
         }
@@ -107,9 +108,9 @@ class AuthController extends ChangeNotifier {
           _token = token;
           _user = data['decoded'];
           _isAuthenticated = true;
-          // sinkronkan profil dari API agar avatar langsung ada
+          notifyListeners(); // pastikan UI bergeser meski fetch profil gagal
+          // sinkronkan profil dari API agar avatar langsung ada (best effort)
           await _fetchAndCacheProfile();
-          notifyListeners();
           return true;
         }
       }
@@ -155,5 +156,19 @@ class AuthController extends ChangeNotifier {
     } catch (_) {
       // abaikan, tidak blokir login
     }
+  }
+
+  @visibleForTesting
+  void setAuthStateForTesting({
+    String? token,
+    Map<String, dynamic>? user,
+    bool? isAuthenticated,
+  }) {
+    _token = token ?? _token;
+    _user = user ?? _user;
+    if (isAuthenticated != null) {
+      _isAuthenticated = isAuthenticated;
+    }
+    notifyListeners();
   }
 }

@@ -331,8 +331,7 @@ class _JadwalPageState extends State<JadwalPage> {
                             ),
                             onPressed: () async {
                               final navigator = Navigator.of(context);
-                              final messenger = ScaffoldMessenger.of(context);
-                              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                              void show(String msg) => showFeedback(context, msg);
                               if (subject == null ||
                                   kelas == null ||
                                   hari == null ||
@@ -530,23 +529,23 @@ class _JadwalPageState extends State<JadwalPage> {
 
     void logout() async {
       final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
+      void show(String msg) => showFeedback(context, msg);
       try {
-        final authController = Provider.of<AuthController>(context, listen: false);
-        await authController.logout();
-        _scaffoldKey.currentState?.closeDrawer();
-        navigator.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
+        final auth = Provider.of<AuthController>(context, listen: false);
+        await auth.logout();
       } catch (e) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Logout gagal: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (!mounted) return;
+        show('Logout gagal: $e');
+        return;
       }
+
+      if (!mounted) return;
+      _scaffoldKey.currentState?.closeDrawer();
+      show('Logout berhasil');
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
     }
 
     return Scaffold(
@@ -850,8 +849,7 @@ class _JadwalPageState extends State<JadwalPage> {
                             ),
                             onPressed: () async {
                               final navigator = Navigator.of(context);
-                              final messenger = ScaffoldMessenger.of(context);
-                              void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                              void show(String msg) => showFeedback(context, msg);
                               if (subject == null ||
                                   kelas == null ||
                                   hari == null ||

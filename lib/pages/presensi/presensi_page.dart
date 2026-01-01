@@ -228,8 +228,7 @@ class _PresensiPageState extends State<PresensiPage> {
                               showFeedback(context, 'Siswa dan tanggal wajib diisi');
                               return;
                             }
-                            final messenger = ScaffoldMessenger.of(context);
-                            void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+                            void show(String msg) => showFeedback(context, msg);
                             final navigator = Navigator.of(ctx);
                             try {
                               final sanitizedDate = _sanitizeDate(dateController.text);
@@ -632,23 +631,23 @@ class _PresensiPageState extends State<PresensiPage> {
     }
     void logout() async {
       final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
+      void show(String msg) => showFeedback(context, msg);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-        _scaffoldKey.currentState?.closeDrawer();
-        navigator.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
       } catch (e) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Logout gagal: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (!mounted) return;
+        show('Logout gagal: $e');
+        return;
       }
+
+      if (!mounted) return;
+      _scaffoldKey.currentState?.closeDrawer();
+      show('Logout berhasil');
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
     }
 
     return Scaffold(

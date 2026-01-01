@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../state/auth_controller.dart';
 import '../../utils/api_client.dart';
 import '../../theme/brand.dart';
+import '../../utils/feedback.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -64,8 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     Future<void> register() async {
       final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
-      void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+      void show(String msg) => showFeedback(context, msg);
       if (_loading) return;
       final valid = _formKey.currentState?.validate() ?? false;
       if (!valid) return;

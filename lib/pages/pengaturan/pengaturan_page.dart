@@ -82,8 +82,7 @@ class _PengaturanPageState extends State<PengaturanPage> {
 
   Future<void> _savePrefs() async {
     if (_api == null) return;
-    final messenger = ScaffoldMessenger.of(context);
-    void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+    void show(String msg) => showFeedback(context, msg);
     setState(() => _loading = true);
     try {
       final res = await _api!.put('/api/profile', body: {
@@ -107,8 +106,7 @@ class _PengaturanPageState extends State<PengaturanPage> {
 
   Future<void> _changePassword() async {
     if (_api == null) return;
-    final messenger = ScaffoldMessenger.of(context);
-    void show(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+    void show(String msg) => showFeedback(context, msg);
     if (_currentPass.text.isEmpty ||
         _newPass.text.isEmpty ||
         _confirmPass.text.isEmpty) {
@@ -149,21 +147,18 @@ class _PengaturanPageState extends State<PengaturanPage> {
 
   Future<void> _logout() async {
     final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
     try {
       final authController = Provider.of<AuthController>(context, listen: false);
       await authController.logout();
+      if (!mounted) return;
+      showFeedback(context, 'Logout berhasil');
       navigator.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
         (route) => false,
       );
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Logout gagal: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (!mounted) return;
+      showFeedback(context, 'Logout gagal: $e');
     }
   }
 

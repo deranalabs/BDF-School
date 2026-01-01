@@ -7,8 +7,14 @@ import '../state/auth_controller.dart';
 
 class ApiClient {
   ApiClient(this.auth, {http.Client? client, String? baseUrl})
-      : _client = client ?? http.Client(),
-        baseUrl = (baseUrl ?? dotenv.env['BASE_URL'] ?? 'http://localhost:3000').trim();
+      : _client = client ?? ApiClient.defaultClientFactory?.call() ?? http.Client(),
+        baseUrl = (baseUrl ?? ApiClient.defaultBaseUrl ?? dotenv.env['BASE_URL'] ?? 'http://localhost:3000').trim();
+
+  /// Allows tests to inject a shared HTTP client factory.
+  static http.Client Function()? defaultClientFactory;
+
+  /// Allows tests to override the fallback BASE_URL when dotenv is not loaded.
+  static String? defaultBaseUrl;
 
   final AuthController auth;
   final http.Client _client;

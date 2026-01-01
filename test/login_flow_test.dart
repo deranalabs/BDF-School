@@ -25,10 +25,14 @@ class FakeAuthController extends AuthController {
 
 void main() {
   Widget wrapWithProvider(AuthController controller) {
-    return MaterialApp(
-      home: ChangeNotifierProvider<AuthController>.value(
-        value: controller,
-        child: const Scaffold(body: LoginScreen()),
+    return ChangeNotifierProvider<AuthController>.value(
+      value: controller,
+      child: MaterialApp(
+        home: Scaffold(
+          body: LoginScreen(
+            onLoginSuccess: () {},
+          ),
+        ),
       ),
     );
   }

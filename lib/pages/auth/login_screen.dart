@@ -1,16 +1,18 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/auth_controller.dart';
 import '../../utils/feedback.dart';
 import '../../theme/brand.dart';
 import 'register_screen.dart';
+import '../dashboard/dashboard_page.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.onLoginSuccess});
+
+  final VoidCallback? onLoginSuccess;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -231,6 +233,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                           _passwordController.text,
                                         );
                                         showFeedback(context, 'Login berhasil');
+                                        if (!mounted) return;
+                                        if (widget.onLoginSuccess != null) {
+                                          widget.onLoginSuccess!();
+                                        } else {
+                                          Navigator.of(context).pushReplacement(
+                                            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                                          );
+                                        }
                                       } on AuthException catch (e) {
                                         showFeedback(context, e.message);
                                       } finally {
@@ -415,13 +425,7 @@ class _DemoHint extends StatelessWidget {
             constraints: const BoxConstraints(),
             icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF1F3B77)),
             onPressed: () {
-              Clipboard.setData(const ClipboardData(text: 'admin\nadmin123'));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Kredensial demo disalin'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              showFeedback(context, 'Kredensial demo disalin');
             },
             tooltip: 'Salin kredensial demo',
           ),

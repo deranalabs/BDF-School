@@ -3,12 +3,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../../state/auth_controller.dart';
 import '../../utils/api_client.dart';
+import '../../state/auth_controller.dart';
 import '../../theme/brand.dart';
-// import '../../utils/feedback.dart'; // unused
+import '../../utils/feedback.dart';
+import 'package:provider/provider.dart';
 
 class NilaiDetailPage extends StatefulWidget {
   final String? studentId;
@@ -260,9 +259,7 @@ class _NilaiDetailPageState extends State<NilaiDetailPage> {
 
   Future<void> _showAddSubjectDialog() async {
     if (widget.studentId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID siswa tidak tersedia')),
-      );
+      showFeedback(context, 'ID siswa tidak tersedia');
       return;
     }
 
@@ -474,9 +471,7 @@ class _NilaiDetailPageState extends State<NilaiDetailPage> {
                             ),
                             onPressed: () async {
                               final navigator = Navigator.of(context);
-                              final messenger = ScaffoldMessenger.of(context);
-                              void show(String msg, {Color? color}) =>
-                                  messenger.showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
+                              void show(String msg, {Color? color}) => showFeedback(context, msg);
                               if (formKey.currentState!.validate()) {
                                 try {
                                   final response = await ApiClient(context.read<AuthController>()).post(

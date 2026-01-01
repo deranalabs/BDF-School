@@ -18,6 +18,7 @@ import '../notes/notes_page.dart';
 import '../../state/auth_controller.dart';
 import '../../theme/brand.dart';
 import 'sidebar.dart';
+import '../../utils/feedback.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -210,25 +211,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     void logout() async {
       final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
+      void show(String msg) => showFeedback(context, msg);
       try {
         final authController = Provider.of<AuthController>(context, listen: false);
         await authController.logout();
-
-        _scaffoldKey.currentState?.closeDrawer();
-
-        navigator.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
       } catch (e) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Logout gagal: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (!mounted) return;
+        show('Logout gagal: $e');
+        return;
       }
+
+      if (!mounted) return;
+      _scaffoldKey.currentState?.closeDrawer();
+      show('Logout berhasil');
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
     }
 
     return Scaffold(
@@ -802,7 +801,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               
                               const SizedBox(height: 16),
                               
-                              // Recent Activity Section
+                              // Aktivitas Terbaru Section
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(20),
